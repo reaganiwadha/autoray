@@ -1,0 +1,13 @@
+[project]
+name = "service"
+version = "0.1.0"
+description = "FastAPI service"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+]
+
+[project.scripts]
+start = "service.main:run"

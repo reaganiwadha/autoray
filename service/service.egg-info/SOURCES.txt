@@ -1,0 +1,9 @@
+README.md
+pyproject.toml
+service/main.py
+service.egg-info/PKG-INFO
+service.egg-info/SOURCES.txt
+service.egg-info/dependency_links.txt
+service.egg-info/entry_points.txt
+service.egg-info/requires.txt
+service.egg-info/top_level.txt
