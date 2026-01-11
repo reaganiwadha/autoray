@@ -1,10 +1,12 @@
 import { Link } from '@tanstack/react-router'
 
 import { useState } from 'react'
-import { Home, Menu, Network, X } from 'lucide-react'
+import { Home, Menu, X, LogOut, User } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
+  const { user, logout } = useAuth()
 
   return (
     <>
@@ -56,6 +58,38 @@ export default function Header() {
             <Home size={20} />
             <span className="font-medium">Home</span>
           </Link>
+
+          {user ? (
+            <>
+              <div className="p-3 mb-2">
+                <div className="flex items-center gap-2 text-gray-300 mb-2">
+                  <User size={20} />
+                  <span className="font-medium">{user.name}</span>
+                </div>
+                <div className="text-sm text-gray-500">{user.email}</div>
+              </div>
+
+              <button
+                onClick={async () => {
+                  await logout()
+                  setIsOpen(false)
+                }}
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors w-full text-left"
+              >
+                <LogOut size={20} />
+                <span className="font-medium">Logout</span>
+              </button>
+            </>
+          ) : (
+            <Link
+              to="/auth/login"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors"
+            >
+              <User size={20} />
+              <span className="font-medium">Login</span>
+            </Link>
+          )}
 
           {/* Demo Links Start */}
 
