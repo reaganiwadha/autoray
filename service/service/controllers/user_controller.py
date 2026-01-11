@@ -1,37 +1,13 @@
 from fastapi import HTTPException, Depends
 from sqlmodel import Session, select
 from service.models.user import User
-from pydantic import BaseModel
+from service.dtos.user_dto import UserCreate, UserLogin, UserResponse, LoginResponse
 from typing import Optional
 from datetime import datetime
 import secrets
 
 
-class UserCreate(BaseModel):
-    name: str
-    email: str
-    password: str
 
-
-class UserLogin(BaseModel):
-    email: str
-    password: str
-
-
-class UserResponse(BaseModel):
-    id: int
-    name: str
-    email: str
-
-    @classmethod
-    def from_db_user(cls, db_user: User) -> "UserResponse":
-        assert db_user.id is not None, "User ID must not be None"
-        return cls(id=db_user.id, name=db_user.name, email=db_user.email)
-
-
-class LoginResponse(BaseModel):
-    user: UserResponse
-    token: str
 
 
 def get_session():

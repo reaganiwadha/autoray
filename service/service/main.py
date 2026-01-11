@@ -8,18 +8,15 @@ SQLModel.metadata.create_all(engine)
 from fastapi import FastAPI, Depends, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+from service.dtos.user_dto import UserCreate, UserLogin, UserResponse, LoginResponse
 from service.controllers.user_controller import (
-    UserCreate,
-    UserLogin,
-    UserResponse,
-    LoginResponse,
     create_user,
     login_user,
     logout_user,
     get_current_user,
     get_session,
 )
-from pydantic import BaseModel
+
 
 app = FastAPI()
 
