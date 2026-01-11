@@ -1,101 +1,50 @@
 import { Link } from '@tanstack/react-router'
-
-import { useState } from 'react'
-import { Home, Menu, X, LogOut, User } from 'lucide-react'
+import { Sun, Moon, LogOut } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 
 export default function Header() {
-  const [isOpen, setIsOpen] = useState(false)
   const { user, logout } = useAuth()
+  const { theme, toggleTheme } = useTheme()
 
   return (
-    <>
-      <header className="p-4 flex items-center bg-gray-800 text-white shadow-lg">
+    <header className="flex items-center justify-between px-4 py-3 border-b border-black dark:border-white bg-white dark:bg-black text-black dark:text-white transition-colors duration-200">
+      <div className="flex items-center gap-4">
+        <Link to="/" className="text-lg font-bold tracking-tight hover:opacity-70 transition-opacity">
+          autoray
+        </Link>
+      </div>
+
+      <div className="flex items-center gap-4">
         <button
-          onClick={() => setIsOpen(true)}
-          className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-          aria-label="Open menu"
+          onClick={toggleTheme}
+          className="p-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black rounded-md transition-colors border border-transparent hover:border-black dark:hover:border-white"
+          aria-label="Toggle theme"
         >
-          <Menu size={24} />
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </button>
-        <h1 className="ml-4 text-xl font-semibold">
-          <Link to="/">
-            <img
-              src="/tanstack-word-logo-white.svg"
-              alt="TanStack Logo"
-              className="h-10"
-            />
-          </Link>
-        </h1>
-      </header>
 
-      <aside
-        className={`fixed top-0 left-0 h-full w-80 bg-gray-900 text-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
-          <h2 className="text-xl font-bold">Navigation</h2>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-            aria-label="Close menu"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        <nav className="flex-1 p-4 overflow-y-auto">
-          <Link
-            to="/"
-            onClick={() => setIsOpen(false)}
-            className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors mb-2"
-            activeProps={{
-              className:
-                'flex items-center gap-3 p-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 transition-colors mb-2',
-            }}
-          >
-            <Home size={20} />
-            <span className="font-medium">Home</span>
-          </Link>
-
-          {user ? (
-            <>
-              <div className="p-3 mb-2">
-                <div className="flex items-center gap-2 text-gray-300 mb-2">
-                  <User size={20} />
-                  <span className="font-medium">{user.name}</span>
-                </div>
-                <div className="text-sm text-gray-500">{user.email}</div>
-              </div>
-
-              <button
-                onClick={async () => {
-                  await logout()
-                  setIsOpen(false)
-                }}
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors w-full text-left"
-              >
-                <LogOut size={20} />
-                <span className="font-medium">Logout</span>
-              </button>
-            </>
-          ) : (
-            <Link
-              to="/auth/login"
-              onClick={() => setIsOpen(false)}
-              className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-800 transition-colors"
+        {user ? (
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium hidden sm:block">{user.name}</span>
+            <button
+              onClick={logout}
+              className="p-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black rounded-md transition-colors border border-transparent hover:border-black dark:hover:border-white"
+              aria-label="Logout"
+              title="Logout"
             >
-              <User size={20} />
-              <span className="font-medium">Login</span>
-            </Link>
-          )}
-
-          {/* Demo Links Start */}
-
-          {/* Demo Links End */}
-        </nav>
-      </aside>
-    </>
+              <LogOut size={18} />
+            </button>
+          </div>
+        ) : (
+          <Link
+            to="/auth/login"
+            className="text-sm font-medium hover:opacity-70 transition-opacity flex items-center gap-2"
+          >
+            <span>Login</span>
+          </Link>
+        )}
+      </div>
+    </header>
   )
 }

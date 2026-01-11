@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import ky from 'ky'
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
@@ -36,17 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = async (email: string, password: string) => {
-    const response = await fetch(`${apiUrl}/users/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
-
-    if (!response.ok) {
-      throw new Error('Login failed')
-    }
-
-    const data = await response.json()
+    const data = await ky.post(`${apiUrl}/users/login`, {
+      json: { email, password },
+    }).json<{ user: User; token: string }>()
+    
     setUser(data.user)
     setToken(data.token)
     localStorage.setItem('token', data.token)
@@ -54,17 +48,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const register = async (name: string, email: string, password: string) => {
-    const response = await fetch(`${apiUrl}/users/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }),
-    })
-
-    if (!response.ok) {
-      throw new Error('Registration failed')
-    }
-
-    const user = await response.json()
+    const user = await ky.post(`${apiUrl}/users/register`, {
+      json: { name, email, password },
+    }).json<User>()
+    
     setUser(user)
   }
 
@@ -72,8 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!token) return
 
     try {
-      await fetch(`${apiUrl}/users/logout`, {
-        method: 'POST',
+      await ky.post(`${apiUrl}/users/logout`, {
         headers: { Authorization: token },
       })
     } catch (error) {

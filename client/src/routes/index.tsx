@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router'
-import logo from '../logo.svg'
 
 export const Route = createFileRoute('/')({
   component: App,
@@ -7,33 +6,24 @@ export const Route = createFileRoute('/')({
 
 function App() {
   return (
-    <div className="text-center">
-      <header className="min-h-screen flex flex-col items-center justify-center bg-[#282c34] text-white text-[calc(10px+2vmin)]">
-        <img
-          src={logo}
-          className="h-[40vmin] pointer-events-none animate-[spin_20s_linear_infinite]"
-          alt="logo"
-        />
-        <p>
-          Edit <code>src/routes/index.tsx</code> and save to reload.
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-60px)] px-4 bg-white dark:bg-black text-black dark:text-white transition-colors duration-200">
+      <main className="max-w-2xl w-full text-center space-y-8">
+        <h1 className="text-4xl sm:text-6xl font-bold tracking-tighter">
+          autoray
+        </h1>
+        <p className="text-lg font-medium leading-relaxed">
+          Minimalist AI Interface.
         </p>
-        <a
-          className="text-[#61dafb] hover:underline"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-        <a
-          className="text-[#61dafb] hover:underline"
-          href="https://tanstack.com"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn TanStack
-        </a>
-      </header>
+        
+        <div className="flex justify-center gap-4 pt-4">
+          <button className="px-6 py-2 bg-black dark:bg-white text-white dark:text-black rounded-full font-medium text-sm hover:opacity-80 transition-opacity border border-black dark:border-white">
+            Get Started
+          </button>
+          <button className="px-6 py-2 border border-black dark:border-white rounded-full font-medium text-sm hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors">
+            Documentation
+          </button>
+        </div>
+      </main>
     </div>
   )
 }
