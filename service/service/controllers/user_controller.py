@@ -6,10 +6,6 @@ from typing import Optional
 from datetime import datetime
 import secrets
 
-
-
-
-
 def get_session():
     from service.main import engine
 
