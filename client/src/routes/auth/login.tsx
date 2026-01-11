@@ -19,7 +19,7 @@ function LoginPage() {
 
     try {
       await login(email, password)
-      router.navigate({ to: '/' })
+      router.navigate({ to: '/projects' })
     } catch (err) {
       setError('Invalid email or password')
     }

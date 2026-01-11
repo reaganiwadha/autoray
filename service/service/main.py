@@ -1,4 +1,4 @@
-from service.models import user
+from service.models import user, project
 from sqlmodel import SQLModel, create_engine, Session, select
 
 engine = create_engine("sqlite:///database.db")
@@ -16,6 +16,8 @@ from service.controllers.user_controller import (
     get_current_user,
     get_session,
 )
+from service.dtos.project_dto import ProjectCreate, ProjectResponse
+from service.controllers.project_controller import create_project, get_user_projects
 
 
 app = FastAPI()
@@ -67,6 +69,27 @@ def logout(Authorization: str = Header(...), session: Session = Depends(get_sess
 def get_me(Authorization: str = Header(...), session: Session = Depends(get_session)):
     db_user = get_current_user(Authorization, session)
     return UserResponse.from_db_user(db_user)
+
+
+@app.post("/projects", response_model=ProjectResponse)
+def create_new_project(
+    project_data: ProjectCreate,
+    Authorization: str = Header(...),
+    session: Session = Depends(get_session),
+):
+    user = get_current_user(Authorization, session)
+    project = create_project(project_data, user, session)
+    return ProjectResponse.from_db_project(project)
+
+
+@app.get("/projects", response_model=list[ProjectResponse])
+def list_projects(
+    Authorization: str = Header(...),
+    session: Session = Depends(get_session),
+):
+    user = get_current_user(Authorization, session)
+    projects = get_user_projects(user, session)
+    return [ProjectResponse.from_db_project(p) for p in projects]
 
 
 def run():

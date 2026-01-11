@@ -1,10 +1,21 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { useAuth } from '../contexts/AuthContext'
+import { useEffect } from 'react'
 
 export const Route = createFileRoute('/')({
   component: App,
 })
 
 function App() {
+  const { user } = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (user) {
+      router.navigate({ to: '/projects' })
+    }
+  }, [user, router])
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-60px)] px-4 bg-white dark:bg-black text-black dark:text-white transition-colors duration-200">
       <main className="max-w-2xl w-full text-center space-y-8">
