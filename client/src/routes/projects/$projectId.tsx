@@ -487,7 +487,14 @@ function DetailPane({ pm, onClose, onDownload, onToggleUnused, s3BaseUrl }: {
     s3BaseUrl: string
 }) {
     const { media } = pm
-    const isVideo = media.content_type.startsWith('video/')
+    const [activeTab, setActiveTab] = useState<'visual' | 'transcription' | 'video' | 'audio'>('visual')
+
+    const categories = [
+        { id: 'visual', title: 'Visual', isAvailable: media.content_type.startsWith('image/') || media.content_type.startsWith('video/') },
+        { id: 'transcription', title: 'Transcript', isAvailable: media.content_type.startsWith('audio/') || media.content_type.startsWith('video/') },
+        { id: 'video', title: 'Video', isAvailable: media.content_type.startsWith('video/') },
+        { id: 'audio', title: 'Audio', isAvailable: media.content_type.startsWith('audio/') || media.content_type.startsWith('video/') },
+    ] as const
 
     return (
         <div className="flex flex-col h-full">
@@ -528,32 +535,27 @@ function DetailPane({ pm, onClose, onDownload, onToggleUnused, s3BaseUrl }: {
                     <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs uppercase tracking-tighter">
                         <Sparkles size={14} /> Autoray Insights
                     </div>
+
+                    <div className="flex p-1 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg">
+                        {categories.map(cat => (
+                            <button
+                                key={cat.id}
+                                onClick={() => setActiveTab(cat.id)}
+                                className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-tight rounded-md transition-all ${
+                                    activeTab === cat.id 
+                                    ? 'bg-indigo-500 text-white shadow-lg' 
+                                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                                }`}
+                            >
+                                {cat.title}
+                            </button>
+                        ))}
+                    </div>
                     
                     <InsightCategory 
-                        title="Visual Summarization" 
-                        summary={media.summaries.find(s => s.type === 'visual')?.summary}
-                        isAvailable={media.content_type.startsWith('image/') || media.content_type.startsWith('video/')}
-                        mediaType={media.content_type}
-                    />
-                    
-                    <InsightCategory 
-                        title="Transcription" 
-                        summary={media.summaries.find(s => s.type === 'transcription')?.summary}
-                        isAvailable={media.content_type.startsWith('audio/') || media.content_type.startsWith('video/')}
-                        mediaType={media.content_type}
-                    />
-
-                    <InsightCategory 
-                        title="Video Summarization" 
-                        summary={media.summaries.find(s => s.type === 'video')?.summary}
-                        isAvailable={media.content_type.startsWith('video/')}
-                        mediaType={media.content_type}
-                    />
-
-                    <InsightCategory 
-                        title="Audio Summarization" 
-                        summary={media.summaries.find(s => s.type === 'audio')?.summary}
-                        isAvailable={media.content_type.startsWith('audio/') || media.content_type.startsWith('video/')}
+                        title={`${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Summarization`}
+                        summary={media.summaries.find(s => s.type === activeTab)?.summary}
+                        isAvailable={categories.find(c => c.id === activeTab)?.isAvailable ?? false}
                         mediaType={media.content_type}
                     />
                 </div>
