@@ -4,7 +4,7 @@ import random
 import string
 
 import uvicorn
-from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import selectinload
@@ -25,10 +25,12 @@ from service.controllers.project_controller import (
 from service.controllers.user_controller import (
     create_user,
     get_current_user,
+    get_user_by_token,
     login_user,
     logout_user,
 )
 from service.core.database import get_session
+from service.core.websocket_manager import manager
 from service.dtos.media_dto import MediaResponse
 from service.dtos.project_dto import ProjectCreate, ProjectResponse, ProjectUpdate
 from service.dtos.project_media_dto import ProjectMediaResponse
@@ -62,6 +64,27 @@ def read_root():
 @app.get("/status")
 def read_status():
     return {"alives": {"service": True, "editor": True}}
+
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket, token: str = None, session: Session = Depends(get_session)):
+    if not token:
+        await websocket.close(code=1008)
+        return
+    
+    try:
+        user = get_user_by_token(token, session)
+    except HTTPException:
+        await websocket.close(code=1008)
+        return
+
+    await manager.connect(user.id, websocket)
+    try:
+        while True:
+            # Just keep the connection alive
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(user.id, websocket)
 
 
 @app.post("/users/register", response_model=UserResponse)

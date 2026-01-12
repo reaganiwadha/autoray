@@ -6,6 +6,7 @@ from service.models.media import Media
 from service.models.project_media import ProjectMedia
 from service.models.media_summary import MediaSummary
 from service.utils.openrouter import get_openrouter_client
+from service.core.websocket_manager import manager
 import io
 
 class AnalyzerJob:
@@ -71,8 +72,14 @@ class AnalyzerJob:
                         session.add(summary)
                         session.commit()
                         print(f"Successfully analyzed media {media.id}")
-                    else:
-                        print(f"Failed to get summary for media {media.id}")
+                        
+                        # Notify user
+                        await manager.send_personal_message({
+                            "type": "MEDIA_ANALYSIS_COMPLETE",
+                            "media_id": media.id,
+                            "analysis_type": "visual",
+                            "summary": summary_text
+                        }, media.user_id)
                         
                 except Exception as e:
                     print(f"Error analyzing media {media.id}: {e}")

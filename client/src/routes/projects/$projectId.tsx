@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { getProject, getProjectMedia, updateProjectMedia, addMediaToProject, type Project, type ProjectMedia } from '../../api/projects'
 import { uploadMedia, type MediaResponse } from '../../api/media'
+import { useSocket, type SocketEvent } from '../../contexts/SocketContext'
 import { 
     LayoutGrid, 
     List as ListIcon,
@@ -47,6 +48,32 @@ function ProjectDetail() {
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const s3BaseUrl = 'http://localhost:9000'
+
+  useSocket((event: SocketEvent) => {
+    if (event.type === 'MEDIA_ANALYSIS_COMPLETE') {
+      setProjectMedia(prev => prev.map(pm => {
+        if (pm.media_id === event.media_id) {
+            const existingSummary = pm.media.summaries.find(s => s.type === event.analysis_type)
+            if (existingSummary) return pm
+            
+            return {
+                ...pm,
+                media: {
+                    ...pm.media,
+                    summaries: [...pm.media.summaries, {
+                        id: Math.random(),
+                        type: event.analysis_type,
+                        summary: event.summary,
+                        model_name: 'openai/gpt-5-image-mini',
+                        created_at: new Date().toISOString()
+                    }]
+                }
+            }
+        }
+        return pm
+      }))
+    }
+  })
 
   useEffect(() => {
     loadData()
@@ -411,6 +438,11 @@ function MediaCard({ pm, onToggleUnused, onDownload, onSelect, isSelected, s3Bas
       <div className="relative aspect-video bg-black/40 flex items-center justify-center overflow-hidden">
         <ThumbImage media={media} s3BaseUrl={s3BaseUrl} size="small" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
         
+        {/* Progress Bar overlay */}
+        <div className="absolute bottom-0 left-0 right-0">
+            <AnalysisProgressBar media={media} />
+        </div>
+
         {/* Status Badges */}
         <div className="absolute top-2 left-2 flex gap-1">
             {pm.is_unused && (
@@ -512,6 +544,12 @@ function DetailPane({ pm, onClose, onDownload, onToggleUnused, s3BaseUrl }: {
                 <div className="space-y-4">
                     <div className="aspect-video bg-black rounded-lg overflow-hidden border border-[var(--border-color)] shadow-xl relative">
                         <ThumbImage media={media} s3BaseUrl={s3BaseUrl} size="large" className="w-full h-full object-contain" />
+                        
+                        {/* Progress Bar overlay */}
+                        <div className="absolute bottom-0 left-0 right-0">
+                            <AnalysisProgressBar media={media} height={4} />
+                        </div>
+
                         <div className="absolute bottom-2 right-2 flex gap-2">
                             <button onClick={() => onDownload(media)} className="p-2 bg-black/60 hover:bg-black text-white rounded-md backdrop-blur-md transition-all">
                                 <Download size={16} />
@@ -628,6 +666,35 @@ function InsightCategory({ title, summary, isAvailable, mediaType }: {
                     <p className="text-[10px] text-[var(--text-secondary)] italic">Analyzing...</p>
                 </div>
             )}
+        </div>
+    )
+}
+
+function AnalysisProgressBar({ media, height = 2 }: { media: MediaResponse, height?: number }) {
+    const categories = [
+        { id: 'visual', isAvailable: media.content_type.startsWith('image/') || media.content_type.startsWith('video/') },
+        { id: 'transcription', isAvailable: media.content_type.startsWith('audio/') || media.content_type.startsWith('video/') },
+        { id: 'video', isAvailable: media.content_type.startsWith('video/') },
+        { id: 'audio', isAvailable: media.content_type.startsWith('audio/') || media.content_type.startsWith('video/') },
+    ]
+
+    const availableCategories = categories.filter(c => c.isAvailable)
+    const completedCategories = availableCategories.filter(c => 
+        media.summaries.some(s => s.type === c.id)
+    )
+
+    const percentage = availableCategories.length > 0 
+        ? (completedCategories.length / availableCategories.length) * 100 
+        : 100
+
+    if (percentage === 100) return null
+
+    return (
+        <div className="w-full bg-black/40 backdrop-blur-sm" style={{ height: `${height}px` }}>
+            <div 
+                className="h-full bg-[var(--brand-accent)] transition-all duration-500 ease-out shadow-[0_0_8px_rgba(255,255,255,0.2)]" 
+                style={{ width: `${percentage}%` }}
+            />
         </div>
     )
 }

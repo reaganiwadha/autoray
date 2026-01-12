@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { getMedia, uploadMedia, deleteMedia, type MediaResponse } from '../api/media'
+import { useSocket, type SocketEvent } from '../contexts/SocketContext'
 import { 
     LayoutGrid, 
     List as ListIcon,
@@ -40,6 +41,30 @@ function MediaBinPage() {
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const s3BaseUrl = 'http://localhost:9000'
+
+  useSocket((event: SocketEvent) => {
+    if (event.type === 'MEDIA_ANALYSIS_COMPLETE') {
+      setMedia(prev => prev.map(m => {
+        if (m.id === event.media_id) {
+            // Check if summary already exists
+            const existingSummary = m.summaries.find(s => s.type === event.analysis_type)
+            if (existingSummary) return m
+            
+            return {
+                ...m,
+                summaries: [...m.summaries, {
+                    id: Math.random(), // Temporary ID if needed
+                    type: event.analysis_type,
+                    summary: event.summary,
+                    model_name: 'openai/gpt-5-image-mini', // Should come from event if possible
+                    created_at: new Date().toISOString()
+                }]
+            }
+        }
+        return m
+      }))
+    }
+  })
 
   useEffect(() => {
     loadMedia()
@@ -303,6 +328,11 @@ function MediaCard({ media, onDownload, onSelect, isSelected, s3BaseUrl }: {
       <div className="relative aspect-video bg-black/40 flex items-center justify-center overflow-hidden">
         <ThumbImage media={media} s3BaseUrl={s3BaseUrl} size="small" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
         
+        {/* Progress Bar overlay */}
+        <div className="absolute bottom-0 left-0 right-0">
+            <AnalysisProgressBar media={media} />
+        </div>
+
         <div 
             className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3"
             onClick={(e) => {
@@ -387,6 +417,12 @@ function DetailPane({ media, onClose, onDownload, onDelete, s3BaseUrl }: {
                 <div className="space-y-4">
                     <div className="aspect-video bg-black rounded-lg overflow-hidden border border-[var(--border-color)] shadow-xl relative">
                         <ThumbImage media={media} s3BaseUrl={s3BaseUrl} size="large" className="w-full h-full object-contain" />
+                        
+                        {/* Progress Bar overlay */}
+                        <div className="absolute bottom-0 left-0 right-0">
+                            <AnalysisProgressBar media={media} height={4} />
+                        </div>
+
                         <div className="absolute bottom-2 right-2 flex gap-2">
                             <button onClick={() => onDownload(media)} className="p-2 bg-black/60 hover:bg-black text-white rounded-md backdrop-blur-md transition-all">
                                 <Download size={16} />
@@ -488,6 +524,35 @@ function InsightCategory({ title, summary, isAvailable, mediaType }: {
                     <p className="text-[10px] text-[var(--text-secondary)] italic">Analyzing...</p>
                 </div>
             )}
+        </div>
+    )
+}
+
+function AnalysisProgressBar({ media, height = 2 }: { media: MediaResponse, height?: number }) {
+    const categories = [
+        { id: 'visual', isAvailable: media.content_type.startsWith('image/') || media.content_type.startsWith('video/') },
+        { id: 'transcription', isAvailable: media.content_type.startsWith('audio/') || media.content_type.startsWith('video/') },
+        { id: 'video', isAvailable: media.content_type.startsWith('video/') },
+        { id: 'audio', isAvailable: media.content_type.startsWith('audio/') || media.content_type.startsWith('video/') },
+    ]
+
+    const availableCategories = categories.filter(c => c.isAvailable)
+    const completedCategories = availableCategories.filter(c => 
+        media.summaries.some(s => s.type === c.id)
+    )
+
+    const percentage = availableCategories.length > 0 
+        ? (completedCategories.length / availableCategories.length) * 100 
+        : 100
+
+    if (percentage === 100) return null
+
+    return (
+        <div className="w-full bg-black/40 backdrop-blur-sm" style={{ height: `${height}px` }}>
+            <div 
+                className="h-full bg-[var(--brand-accent)] transition-all duration-500 ease-out shadow-[0_0_8px_rgba(255,255,255,0.2)]" 
+                style={{ width: `${percentage}%` }}
+            />
         </div>
     )
 }
