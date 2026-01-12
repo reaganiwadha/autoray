@@ -532,18 +532,18 @@ function DetailPane({ pm, onClose, onDownload, onToggleUnused, s3BaseUrl }: {
                 </div>
 
                 <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs uppercase tracking-tighter">
+                    <div className="flex items-center gap-2 text-[var(--text-primary)] font-bold text-xs uppercase tracking-tighter">
                         <Sparkles size={14} /> Autoray Insights
                     </div>
 
-                    <div className="flex p-1 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-lg">
+                    <div className="flex p-1 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg">
                         {categories.map(cat => (
                             <button
                                 key={cat.id}
                                 onClick={() => setActiveTab(cat.id)}
                                 className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-tight rounded-md transition-all ${
                                     activeTab === cat.id 
-                                    ? 'bg-indigo-500 text-white shadow-lg' 
+                                    ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] shadow-sm' 
                                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                                 }`}
                             >
@@ -607,10 +607,10 @@ function InsightCategory({ title, summary, isAvailable, mediaType }: {
     mediaType: string
 }) {
     return (
-        <div className="p-4 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl space-y-2">
+        <div className="p-4 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl space-y-2">
             <div className="flex items-center justify-between">
                 <h5 className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">{title}</h5>
-                {!isAvailable && <span className="text-[9px] px-1.5 py-0.5 bg-red-500/10 text-red-500 rounded font-bold uppercase">Not Available</span>}
+                {!isAvailable && <span className="text-[9px] px-1.5 py-0.5 bg-[var(--accents-2)] text-[var(--text-secondary)] rounded font-bold uppercase">Not Available</span>}
             </div>
             
             {!isAvailable ? (
@@ -623,8 +623,8 @@ function InsightCategory({ title, summary, isAvailable, mediaType }: {
                 </p>
             ) : (
                 <div className="space-y-2 py-1">
-                    <div className="h-1.5 w-full bg-[var(--border-color)] rounded animate-pulse" />
-                    <div className="h-1.5 w-[90%] bg-[var(--border-color)] rounded animate-pulse" />
+                    <div className="h-1.5 w-full bg-[var(--accents-2)] rounded animate-pulse" />
+                    <div className="h-1.5 w-[90%] bg-[var(--accents-2)] rounded animate-pulse" />
                     <p className="text-[10px] text-[var(--text-secondary)] italic">Analyzing...</p>
                 </div>
             )}

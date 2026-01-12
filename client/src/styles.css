@@ -2,29 +2,54 @@
 @import "@fontsource-variable/inter";
 
 :root {
-  --color-black: #000000;
-  --color-white: #ffffff;
-  --bg-primary: #000000;
-  --bg-secondary: #111111;
-  --text-primary: #ffffff;
-  --text-secondary: #888888;
-  --border-color: #333333;
+  /* Grayscale */
+  --accents-1: #fafafa;
+  --accents-2: #eaeaea;
+  --accents-3: #999;
+  --accents-4: #888;
+  --accents-5: #666;
+  --accents-6: #444;
+  --accents-7: #333;
+  --accents-8: #111;
+
+  /* Neutrals */
+  --geist-foreground: #000;
+  --geist-background: #fff;
+  
+  /* Themed variables */
+  --bg-primary: var(--geist-background);
+  --bg-secondary: var(--accents-1);
+  --text-primary: var(--geist-foreground);
+  --text-secondary: var(--accents-5);
+  --border-color: var(--accents-2);
+  
+  /* Accents */
+  --geist-success: #0070f3;
+  --geist-error: #ee0000;
+  --geist-warning: #f5a623;
+  --brand-accent: #0070f3;
 }
 
-[data-theme="dark"], .dark {
-  --bg-primary: #000000;
-  --bg-secondary: #000000;
-  --text-primary: #ffffff;
-  --text-secondary: #ffffff;
-  --border-color: #ffffff;
-}
+.dark {
+  --accents-1: #111;
+  --accents-2: #333;
+  --accents-3: #444;
+  --accents-4: #666;
+  --accents-5: #888;
+  --accents-6: #999;
+  --accents-7: #eaeaea;
+  --accents-8: #fafafa;
 
-[data-theme="light"], .light {
-  --bg-primary: #ffffff;
-  --bg-secondary: #ffffff;
-  --text-primary: #000000;
-  --text-secondary: #000000;
-  --border-color: #000000;
+  --geist-foreground: #fff;
+  --geist-background: #000;
+
+  --bg-primary: var(--geist-background);
+  --bg-secondary: #0a0a0a;
+  --text-primary: var(--geist-foreground);
+  --text-secondary: var(--accents-5);
+  --border-color: var(--accents-2);
+
+  --brand-accent: #fff; /* Vercel uses white accent in dark mode often */
 }
 
 
