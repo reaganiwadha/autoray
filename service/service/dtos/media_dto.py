@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict
 
 from .thumbnail_dto import ThumbnailResponse
+from .media_summary_dto import MediaSummaryResponse
 
 
 class MediaResponse(BaseModel):
@@ -18,3 +19,4 @@ class MediaResponse(BaseModel):
     url: str | None = None
     binary_metadata: Optional[Dict[str, Any]] = None
     thumbnails: List[ThumbnailResponse] = []
+    summary: Optional[MediaSummaryResponse] = None

@@ -9,6 +9,7 @@ from .project_media import ProjectMedia
 
 if TYPE_CHECKING:
 
+    from .media_summary import MediaSummary
     from .project import Project
     from .thumbnail import Thumbnail
 
@@ -39,5 +40,7 @@ class Media(SQLModel, table=True):
     thumbnails: List["Thumbnail"] = Relationship(back_populates="media")
 
     projects: List["Project"] = Relationship(back_populates="medias", link_model=ProjectMedia)
+
+    summary: Optional["MediaSummary"] = Relationship(back_populates="media")
 
 

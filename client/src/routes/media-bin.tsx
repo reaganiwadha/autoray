@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { getMedia, uploadMedia, type MediaResponse } from '../api/media'
+import { getMedia, uploadMedia, deleteMedia, type MediaResponse } from '../api/media'
 import { 
     LayoutGrid, 
     List as ListIcon,
@@ -16,7 +16,8 @@ import {
     ChevronDown,
     FileText,
     Info,
-    Sparkles
+    Sparkles,
+    Trash2
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -83,6 +84,19 @@ function MediaBinPage() {
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+  }
+
+  const handleDelete = async (m: MediaResponse) => {
+    if (!window.confirm(`Are you sure you want to delete "${m.filename}"? This will also remove it from all projects.`)) return
+    
+    try {
+      await deleteMedia(m.id)
+      setMedia(prev => prev.filter(item => item.id !== m.id))
+      if (selectedMediaId === m.id) setSelectedMediaId(null)
+    } catch (err) {
+      console.error('Failed to delete media', err)
+      alert('Failed to delete media.')
+    }
   }
 
   const filteredAndSortedMedia = useMemo(() => {
@@ -191,7 +205,7 @@ function MediaBinPage() {
                 </div>
 
                 {viewMode === 'grid' ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-6">
                         {filteredAndSortedMedia.map((m) => (
                         <MediaCard 
                             key={m.id} 
@@ -263,6 +277,7 @@ function MediaBinPage() {
                     media={selectedMedia} 
                     onClose={() => setSelectedMediaId(null)} 
                     onDownload={handleDownload}
+                    onDelete={handleDelete}
                     s3BaseUrl={s3BaseUrl}
                 />
             </div>
@@ -332,10 +347,11 @@ function ThumbImage({ media, s3BaseUrl, size, className }: { media: MediaRespons
     return isVideo ? <FileVideo className="text-[var(--text-secondary)]" size={32} /> : <FileImage className="text-[var(--text-secondary)]" size={32} />
 }
 
-function DetailPane({ media, onClose, onDownload, s3BaseUrl }: { 
+function DetailPane({ media, onClose, onDownload, onDelete, s3BaseUrl }: { 
     media: MediaResponse, 
     onClose: () => void, 
     onDownload: (m: MediaResponse) => void,
+    onDelete: (m: MediaResponse) => void,
     s3BaseUrl: string
 }) {
     const isVideo = media.content_type.startsWith('video/')
@@ -344,11 +360,20 @@ function DetailPane({ media, onClose, onDownload, s3BaseUrl }: {
         <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-4 border-b border-[var(--border-color)]">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-2">
-                    <Info size={14} /> File Details
+                    <Info size={14} /> Media Detail
                 </h3>
-                <button onClick={onClose} className="p-1 hover:bg-white/10 rounded">
-                    <X size={18} />
-                </button>
+                <div className="flex items-center gap-1">
+                    <button 
+                        onClick={() => onDelete(media)} 
+                        className="p-1.5 hover:bg-red-500/10 text-red-500 rounded transition-colors"
+                        title="Delete Media"
+                    >
+                        <Trash2 size={18} />
+                    </button>
+                    <button onClick={onClose} className="p-1 hover:bg-white/10 rounded">
+                        <X size={18} />
+                    </button>
+                </div>
             </div>
 
             <div className="p-6 space-y-8">
@@ -377,14 +402,22 @@ function DetailPane({ media, onClose, onDownload, s3BaseUrl }: {
                     <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs uppercase tracking-tighter">
                         <Sparkles size={14} /> Autoray Insights
                     </div>
-                    <div className="space-y-2">
-                        <div className="h-2 w-full bg-indigo-500/10 rounded animate-pulse" />
-                        <div className="h-2 w-[90%] bg-indigo-500/10 rounded animate-pulse" />
-                        <div className="h-2 w-[70%] bg-indigo-500/10 rounded animate-pulse" />
-                    </div>
-                    <p className="text-[10px] text-indigo-300/60 leading-relaxed italic">
-                        The AI summary for this {isVideo ? 'video' : 'image'} will be generated once the autoray indexing process is complete.
-                    </p>
+                    {media.summary ? (
+                        <p className="text-xs text-[var(--text-primary)] leading-relaxed">
+                            {media.summary.summary}
+                        </p>
+                    ) : (
+                        <>
+                            <div className="space-y-2">
+                                <div className="h-2 w-full bg-indigo-500/10 rounded animate-pulse" />
+                                <div className="h-2 w-[90%] bg-indigo-500/10 rounded animate-pulse" />
+                                <div className="h-2 w-[70%] bg-indigo-500/10 rounded animate-pulse" />
+                            </div>
+                            <p className="text-[10px] text-indigo-300/60 leading-relaxed italic">
+                                The AI summary for this {isVideo ? 'video' : 'image'} will be generated once the autoray indexing process is complete. {isVideo ? '(Video support coming soon)' : '(Must be added to a project to trigger analysis)'}
+                            </p>
+                        </>
+                    )}
                 </div>
 
                 <div className="space-y-4">

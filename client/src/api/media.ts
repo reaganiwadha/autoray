@@ -36,3 +36,7 @@ export async function uploadMedia(file: File): Promise<MediaResponse> {
 export async function getMedia(): Promise<MediaResponse[]> {
   return apiClient.get('media').json()
 }
+
+export async function deleteMedia(mediaId: number): Promise<void> {
+  await apiClient.delete(`media/${mediaId}`)
+}

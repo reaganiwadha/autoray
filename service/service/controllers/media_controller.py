@@ -65,7 +65,42 @@ def get_user_media(user: User, session: Session) -> list[Media]:
     statement = (
         select(Media)
         .where(Media.user_id == user.id)
-        .options(selectinload(Media.thumbnails))
+        .options(
+            selectinload(Media.thumbnails),
+            selectinload(Media.summary)
+        )
         .order_by(Media.created_at.desc())
     )
     return list(session.exec(statement).all())
+
+
+def delete_media(media_id: int, user: User, session: Session):
+    statement = (
+        select(Media)
+        .where(Media.id == media_id, Media.user_id == user.id)
+        .options(selectinload(Media.thumbnails))
+    )
+    media = session.exec(statement).first()
+    if not media:
+        raise HTTPException(status_code=404, detail="Media not found")
+
+    minio_client = get_storage_client()
+    s3_bucket = Storage.get_bucket_name()
+    thumbnail_bucket = Storage.get_thumbnail_bucket_name()
+
+    # Delete thumbnails from S3
+    for thumb in media.thumbnails:
+        try:
+            minio_client.remove_object(thumbnail_bucket, thumb.s3_key)
+        except Exception as e:
+            print(f"Failed to delete thumbnail {thumb.s3_key}: {e}")
+
+    # Delete main file from S3
+    try:
+        minio_client.remove_object(s3_bucket, media.s3_key)
+    except Exception as e:
+        print(f"Failed to delete media {media.s3_key}: {e}")
+
+    # Delete from DB
+    session.delete(media)
+    session.commit()

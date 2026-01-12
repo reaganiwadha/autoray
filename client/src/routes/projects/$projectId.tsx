@@ -376,7 +376,7 @@ function MediaBin({
         </div>
       )}
 
-      {media.length === 0 && !isLoading && (
+      {media.length === 0 && (
           <div className="col-span-full py-20 text-center border-2 border-dashed border-[var(--border-color)] rounded-xl bg-[var(--bg-secondary)]">
               <div className="flex flex-col items-center gap-3">
                   <LayoutGrid size={48} className="text-[var(--text-secondary)] opacity-20" />
@@ -493,7 +493,7 @@ function DetailPane({ pm, onClose, onDownload, onToggleUnused, s3BaseUrl }: {
         <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-4 border-b border-[var(--border-color)]">
                 <h3 className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)] flex items-center gap-2">
-                    <Info size={14} /> File Details
+                    <Info size={14} /> Media Detail
                 </h3>
                 <button onClick={onClose} className="p-1 hover:bg-white/10 rounded">
                     <X size={18} />
@@ -524,19 +524,27 @@ function DetailPane({ pm, onClose, onDownload, onToggleUnused, s3BaseUrl }: {
                     </div>
                 </div>
 
-                {/* AI Summary Placeholder */}
+                {/* AI Summary */}
                 <div className="p-4 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-xl space-y-3">
                     <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs uppercase tracking-tighter">
                         <Sparkles size={14} /> Autoray Insights
                     </div>
-                    <div className="space-y-2">
-                        <div className="h-2 w-full bg-indigo-500/10 rounded animate-pulse" />
-                        <div className="h-2 w-[90%] bg-indigo-500/10 rounded animate-pulse" />
-                        <div className="h-2 w-[70%] bg-indigo-500/10 rounded animate-pulse" />
-                    </div>
-                    <p className="text-[10px] text-indigo-300/60 leading-relaxed italic">
-                        The AI summary for this {isVideo ? 'video' : 'image'} will be generated once the autoray indexing process is complete.
-                    </p>
+                    {media.summary ? (
+                        <p className="text-xs text-[var(--text-primary)] leading-relaxed">
+                            {media.summary.summary}
+                        </p>
+                    ) : (
+                        <>
+                            <div className="space-y-2">
+                                <div className="h-2 w-full bg-indigo-500/10 rounded animate-pulse" />
+                                <div className="h-2 w-[90%] bg-indigo-500/10 rounded animate-pulse" />
+                                <div className="h-2 w-[70%] bg-indigo-500/10 rounded animate-pulse" />
+                            </div>
+                            <p className="text-[10px] text-indigo-300/60 leading-relaxed italic">
+                                The AI summary for this {isVideo ? 'video' : 'image'} will be generated once the autoray indexing process is complete. {isVideo ? '(Video support coming soon)' : '(Must be added to a project to trigger analysis)'}
+                            </p>
+                        </>
+                    )}
                 </div>
 
                 {/* Metadata Table */}

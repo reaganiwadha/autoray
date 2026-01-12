@@ -6,10 +6,12 @@ import string
 import uvicorn
 from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 from starlette.datastructures import Headers
 
-from service.controllers.media_controller import get_user_media, upload_media
+from service.controllers.media_controller import delete_media, get_user_media, upload_media
 from service.controllers.project_controller import (
     add_media_to_project,
     create_project,
@@ -33,8 +35,15 @@ from service.dtos.project_media_dto import ProjectMediaResponse
 from service.dtos.thumbnail_dto import ThumbnailResponse
 from service.dtos.user_dto import LoginResponse, UserCreate, UserLogin, UserResponse
 from service.models import user
+from service.models.media import Media
+from service.models.project_media import ProjectMedia
+from service.utils.analyzer import start_analyzer_job
 
 app = FastAPI()
+
+@app.on_event("startup")
+async def startup_event():
+    start_analyzer_job()
 
 app.add_middleware(
     CORSMiddleware,
@@ -152,16 +161,7 @@ def list_project_media(
             media_id=assoc.media_id,
             is_unused=assoc.is_unused,
             created_at=assoc.created_at,
-            media=MediaResponse(
-                id=m.id,
-                filename=m.filename,
-                content_type=m.content_type,
-                size=m.size,
-                s3_key=m.s3_key,
-                created_at=m.created_at,
-                binary_metadata=m.binary_metadata,
-                thumbnails=[ThumbnailResponse.model_validate(t) for t in m.thumbnails],
-            ),
+            media=MediaResponse.model_validate(m),
         )
         for assoc, m in results
     ]
@@ -176,13 +176,16 @@ def add_media_to_project_endpoint(
 ):
     user = get_current_user(Authorization, session)
     add_media_to_project(project_id, media_id, user, session)
-    
+
     # Fetch the specific assoc and media
     statement = (
         select(ProjectMedia, Media)
         .join(Media, ProjectMedia.media_id == Media.id)
         .where(ProjectMedia.project_id == project_id, ProjectMedia.media_id == media_id)
-        .options(selectinload(Media.thumbnails))
+        .options(
+            selectinload(Media.thumbnails),
+            selectinload(Media.summary)
+        )
     )
     result = session.exec(statement).first()
     if not result:
@@ -194,20 +197,9 @@ def add_media_to_project_endpoint(
         media_id=assoc.media_id,
         is_unused=assoc.is_unused,
         created_at=assoc.created_at,
-        media=MediaResponse(
-            id=m.id,
-            filename=m.filename,
-            content_type=m.content_type,
-            size=m.size,
-            s3_key=m.s3_key,
-            created_at=m.created_at,
-            binary_metadata=m.binary_metadata,
-            thumbnails=[ThumbnailResponse.model_validate(t) for t in m.thumbnails],
-        ),
+        media=MediaResponse.model_validate(m),
     )
 
-
-from pydantic import BaseModel
 
 class MediaStatusUpdate(BaseModel):
     is_unused: bool
@@ -222,13 +214,16 @@ def update_project_media(
 ):
     user = get_current_user(Authorization, session)
     update_project_media_status(project_id, media_id, data.is_unused, user, session)
-    
+
     # Fetch the specific assoc and media
     statement = (
         select(ProjectMedia, Media)
         .join(Media, ProjectMedia.media_id == Media.id)
         .where(ProjectMedia.project_id == project_id, ProjectMedia.media_id == media_id)
-        .options(selectinload(Media.thumbnails))
+        .options(
+            selectinload(Media.thumbnails),
+            selectinload(Media.summary)
+        )
     )
     result = session.exec(statement).first()
     if not result:
@@ -240,16 +235,7 @@ def update_project_media(
         media_id=assoc.media_id,
         is_unused=assoc.is_unused,
         created_at=assoc.created_at,
-        media=MediaResponse(
-            id=m.id,
-            filename=m.filename,
-            content_type=m.content_type,
-            size=m.size,
-            s3_key=m.s3_key,
-            created_at=m.created_at,
-            binary_metadata=m.binary_metadata,
-            thumbnails=[ThumbnailResponse.model_validate(t) for t in m.thumbnails],
-        ),
+        media=MediaResponse.model_validate(m),
     )
 
 
@@ -261,16 +247,7 @@ async def upload_file(
 ):
     user = get_current_user(Authorization, session)
     media = await upload_media(file, user, session)
-    return MediaResponse(
-        id=media.id,
-        filename=media.filename,
-        content_type=media.content_type,
-        size=media.size,
-        s3_key=media.s3_key,
-        created_at=media.created_at,
-        binary_metadata=media.binary_metadata,
-        thumbnails=[ThumbnailResponse.model_validate(t) for t in media.thumbnails],
-    )
+    return MediaResponse.model_validate(media)
 
 
 @app.get("/media", response_model=list[MediaResponse])
@@ -280,19 +257,18 @@ def list_media(
 ):
     user = get_current_user(Authorization, session)
     medias = get_user_media(user, session)
-    return [
-        MediaResponse(
-            id=m.id,
-            filename=m.filename,
-            content_type=m.content_type,
-            size=m.size,
-            s3_key=m.s3_key,
-            created_at=m.created_at,
-            binary_metadata=m.binary_metadata,
-            thumbnails=[ThumbnailResponse.model_validate(t) for t in m.thumbnails],
-        )
-        for m in medias
-    ]
+    return [MediaResponse.model_validate(m) for m in medias]
+
+
+@app.delete("/media/{media_id}")
+def delete_media_endpoint(
+    media_id: int,
+    Authorization: str = Header(...),
+    session: Session = Depends(get_session),
+):
+    user = get_current_user(Authorization, session)
+    delete_media(media_id, user, session)
+    return {"message": "Media deleted successfully"}
 
 
 @app.post("/debug/upload", response_model=MediaResponse)
@@ -320,16 +296,7 @@ async def debug_upload_random_file(
 
     media = await upload_media(upload_file, user, session)
 
-    return MediaResponse(
-        id=media.id,
-        filename=media.filename,
-        content_type=media.content_type,
-        size=media.size,
-        s3_key=media.s3_key,
-        created_at=media.created_at,
-        binary_metadata=media.binary_metadata,
-        thumbnails=[ThumbnailResponse.model_validate(t) for t in media.thumbnails],
-    )
+    return MediaResponse.model_validate(media)
 
 
 def run():
