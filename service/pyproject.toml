@@ -14,7 +14,30 @@ dependencies = [
     "python-multipart",
     "Pillow",
     "ffmpeg-python",
+    "ruff",
 ]
 
 [project.scripts]
 start = "service.main:run"
+lint = "ruff check ."
+format = "ruff format ."
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "C90", # mccabe complexity
+    "B",   # flake8-bugbear
+]
+ignore = [
+    "B008", # Do not perform function call `Depends` in argument defaults
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10

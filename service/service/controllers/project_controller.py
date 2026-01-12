@@ -1,9 +1,11 @@
-from sqlmodel import Session, select, col
+from datetime import datetime, timezone
+
 from fastapi import HTTPException
+from sqlmodel import Session, col, select
+
+from service.dtos.project_dto import ProjectCreate, ProjectUpdate
 from service.models.project import Project
 from service.models.user import User
-from service.dtos.project_dto import ProjectCreate, ProjectUpdate
-from datetime import datetime, timezone
 
 
 def create_project(

@@ -1,12 +1,16 @@
 import os
 import uuid
 from datetime import datetime, timezone
-from fastapi import UploadFile, HTTPException
+
+from fastapi import HTTPException, UploadFile
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
+
+from service.core.storage import Storage, get_storage_client
 from service.models.media import Media
 from service.models.user import User
-from service.core.storage import get_storage_client, Storage
 from service.utils.media_processor import process_media
+
 
 async def upload_media(file: UploadFile, user: User, session: Session) -> Media:
     try:
@@ -16,7 +20,7 @@ async def upload_media(file: UploadFile, user: User, session: Session) -> Media:
         # Generate a unique object name
         file_ext = os.path.splitext(file.filename)[1]
         object_name = f"{user.id}/{uuid.uuid4()}{file_ext}"
-        
+
         # Get file size
         file.file.seek(0, 2)
         file_size = file.file.tell()
@@ -43,10 +47,10 @@ async def upload_media(file: UploadFile, user: User, session: Session) -> Media:
         session.add(media)
         session.commit()
         session.refresh(media)
-        
+
         # Trigger blocking processing
         await process_media(media.id, session)
-        
+
         # Refresh to get updated metadata
         session.refresh(media)
 
@@ -54,10 +58,14 @@ async def upload_media(file: UploadFile, user: User, session: Session) -> Media:
 
     except Exception as e:
         print(f"Upload/Processing failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to upload/process file: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to upload/process file: {str(e)}") from e
 
-from sqlalchemy.orm import selectinload
 
 def get_user_media(user: User, session: Session) -> list[Media]:
-    statement = select(Media).where(Media.user_id == user.id).options(selectinload(Media.thumbnails)).order_by(Media.created_at.desc())
+    statement = (
+        select(Media)
+        .where(Media.user_id == user.id)
+        .options(selectinload(Media.thumbnails))
+        .order_by(Media.created_at.desc())
+    )
     return list(session.exec(statement).all())

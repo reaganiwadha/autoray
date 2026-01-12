@@ -1,5 +1,7 @@
 import os
+
 from minio import Minio
+
 
 class Storage:
     _instance = None
@@ -11,7 +13,7 @@ class Storage:
             s3_access_key = os.getenv("S3_ACCESS_KEY", "minioadmin")
             s3_secret_key = os.getenv("S3_SECRET_KEY", "minioadmin")
             s3_secure = os.getenv("S3_SECURE", "false").lower() == "true"
-            
+
             cls._instance = Minio(
                 s3_endpoint,
                 access_key=s3_access_key,

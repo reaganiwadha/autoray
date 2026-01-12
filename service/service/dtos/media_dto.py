@@ -1,11 +1,14 @@
-from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, ConfigDict
+
 from .thumbnail_dto import ThumbnailResponse
+
 
 class MediaResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     filename: str
     content_type: str

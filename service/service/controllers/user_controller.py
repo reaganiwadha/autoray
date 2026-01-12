@@ -1,10 +1,10 @@
-from fastapi import HTTPException, Depends
-from sqlmodel import Session, select
-from service.models.user import User
-from service.dtos.user_dto import UserCreate, UserLogin, UserResponse, LoginResponse
-from typing import Optional
-from datetime import datetime
 import secrets
+
+from fastapi import HTTPException
+from sqlmodel import Session, select
+
+from service.dtos.user_dto import UserCreate
+from service.models.user import User
 
 
 def create_user(user_data: UserCreate, session: Session) -> User:

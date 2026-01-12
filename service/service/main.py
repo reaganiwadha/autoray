@@ -1,31 +1,33 @@
-from fastapi import FastAPI, Depends, Header, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
-from service.dtos.user_dto import UserCreate, UserLogin, UserResponse, LoginResponse
-from service.controllers.user_controller import (
-    create_user,
-    login_user,
-    logout_user,
-    get_current_user,
-)
-from service.core.database import get_session
-from service.dtos.project_dto import ProjectCreate, ProjectResponse, ProjectUpdate
-from service.controllers.project_controller import (
-    create_project,
-    get_user_projects,
-    update_project,
-    delete_project,
-)
-from service.dtos.media_dto import MediaResponse
-from service.controllers.media_controller import upload_media, get_user_media
-from fastapi import UploadFile, File
-from sqlmodel import Session, select
-from service.models import user
-import random
-import string
 import io
 import os
+import random
+import string
 
+import uvicorn
+from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from sqlmodel import Session, select
+from starlette.datastructures import Headers
+
+from service.controllers.media_controller import get_user_media, upload_media
+from service.controllers.project_controller import (
+    create_project,
+    delete_project,
+    get_user_projects,
+    update_project,
+)
+from service.controllers.user_controller import (
+    create_user,
+    get_current_user,
+    login_user,
+    logout_user,
+)
+from service.core.database import get_session
+from service.dtos.media_dto import MediaResponse
+from service.dtos.project_dto import ProjectCreate, ProjectResponse, ProjectUpdate
+from service.dtos.thumbnail_dto import ThumbnailResponse
+from service.dtos.user_dto import LoginResponse, UserCreate, UserLogin, UserResponse
+from service.models import user
 
 app = FastAPI()
 
@@ -50,9 +52,7 @@ def read_status():
 
 @app.post("/users/register", response_model=UserResponse)
 def register(user_data: UserCreate, session: Session = Depends(get_session)):
-    existing_user = session.exec(
-        select(user.User).where(user.User.email == user_data.email)
-    ).first()
+    existing_user = session.exec(select(user.User).where(user.User.email == user_data.email)).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -122,8 +122,6 @@ def delete_existing_project(
     return {"status": "ok"}
 
 
-from service.dtos.thumbnail_dto import ThumbnailResponse
-
 @app.post("/media/upload", response_model=MediaResponse)
 async def upload_file(
     file: UploadFile = File(...),
@@ -140,7 +138,7 @@ async def upload_file(
         s3_key=media.s3_key,
         created_at=media.created_at,
         binary_metadata=media.binary_metadata,
-        thumbnails=[ThumbnailResponse.model_validate(t) for t in media.thumbnails]
+        thumbnails=[ThumbnailResponse.model_validate(t) for t in media.thumbnails],
     )
 
 
@@ -160,7 +158,7 @@ def list_media(
             s3_key=m.s3_key,
             created_at=m.created_at,
             binary_metadata=m.binary_metadata,
-            thumbnails=[ThumbnailResponse.model_validate(t) for t in m.thumbnails]
+            thumbnails=[ThumbnailResponse.model_validate(t) for t in m.thumbnails],
         )
         for m in medias
     ]
@@ -175,23 +173,22 @@ async def debug_upload_random_file(
     Generates a random 1MB file and uploads it.
     """
     user = get_current_user(Authorization, session)
-    
+
     # Generate random content (1MB)
     size = 1024 * 1024
     content = os.urandom(size)
-    
+
     # Generate random filename
-    random_name = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+    random_name = "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
     filename = f"debug_{random_name}.bin"
-    
+
     # Create UploadFile-like object
     file_object = io.BytesIO(content)
-    from starlette.datastructures import Headers
     headers = Headers({"content-type": "application/octet-stream"})
     upload_file = UploadFile(file=file_object, filename=filename, size=size, headers=headers)
-    
+
     media = await upload_media(upload_file, user, session)
-    
+
     return MediaResponse(
         id=media.id,
         filename=media.filename,
@@ -200,8 +197,9 @@ async def debug_upload_random_file(
         s3_key=media.s3_key,
         created_at=media.created_at,
         binary_metadata=media.binary_metadata,
-        thumbnails=[ThumbnailResponse.model_validate(t) for t in media.thumbnails]
+        thumbnails=[ThumbnailResponse.model_validate(t) for t in media.thumbnails],
     )
+
 
 def run():
     uvicorn.run(

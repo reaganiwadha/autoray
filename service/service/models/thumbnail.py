@@ -1,6 +1,7 @@
-from sqlmodel import Field, SQLModel, Relationship
 from datetime import datetime, timezone
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
+
+from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
     from .media import Media
@@ -16,5 +17,5 @@ class Thumbnail(SQLModel, table=True):
     height: Optional[int] = Field(default=None)
     type: str  # 'original', 'large', 'small', 'gif'
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    
+
     media: "Media" = Relationship(back_populates="thumbnails")
