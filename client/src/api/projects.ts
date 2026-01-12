@@ -1,6 +1,4 @@
-import ky from 'ky'
-
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { apiClient } from './client'
 
 export interface Project {
   id: number
@@ -10,28 +8,22 @@ export interface Project {
   updated_at: string
 }
 
-export async function getProjects(token: string): Promise<Project[]> {
-  return ky.get(`${apiUrl}/projects`, {
-    headers: { Authorization: token },
-  }).json()
+export async function getProjects(): Promise<Project[]> {
+  return apiClient.get('projects').json()
 }
 
-export async function createProject(token: string, name: string): Promise<Project> {
-  return ky.post(`${apiUrl}/projects`, {
-    headers: { Authorization: token },
+export async function createProject(name: string): Promise<Project> {
+  return apiClient.post('projects', {
     json: { name },
   }).json()
 }
 
-export async function updateProject(token: string, id: number, name: string): Promise<Project> {
-  return ky.put(`${apiUrl}/projects/${id}`, {
-    headers: { Authorization: token },
+export async function updateProject(id: number, name: string): Promise<Project> {
+  return apiClient.put(`projects/${id}`, {
     json: { name },
   }).json()
 }
 
-export async function deleteProject(token: string, id: number): Promise<void> {
-  return ky.delete(`${apiUrl}/projects/${id}`, {
-    headers: { Authorization: token },
-  }).json()
+export async function deleteProject(id: number): Promise<void> {
+  return apiClient.delete(`projects/${id}`).json()
 }

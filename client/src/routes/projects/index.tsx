@@ -28,7 +28,7 @@ function ProjectsPage() {
 
     const fetchProjects = async () => {
       try {
-        const data = await getProjects(token)
+        const data = await getProjects()
         setProjects(data)
       } catch (error) {
         console.error('Failed to fetch projects', error)
@@ -52,7 +52,7 @@ function ProjectsPage() {
     if (!newProjectName.trim() || !token) return
 
     try {
-      const newProject = await createProject(token, newProjectName.trim())
+      const newProject = await createProject(newProjectName.trim())
       setProjects([newProject, ...projects])
       setShowCreateModal(false)
       setNewProjectName('')
@@ -66,7 +66,7 @@ function ProjectsPage() {
     if (!projectToRename || !renameName.trim() || !token) return
 
     try {
-      const updated = await updateProject(token, projectToRename.id, renameName.trim())
+      const updated = await updateProject(projectToRename.id, renameName.trim())
       setProjects(projects.map(p => p.id === updated.id ? updated : p))
       setProjectToRename(null)
       setRenameName('')
@@ -79,7 +79,7 @@ function ProjectsPage() {
     if (!token || !confirm('Are you sure you want to delete this project?')) return
 
     try {
-      await deleteProject(token, id)
+      await deleteProject(id)
       setProjects(projects.filter(p => p.id !== id))
     } catch (error) {
       console.error('Failed to delete project', error)

@@ -1,7 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
-import ky from 'ky'
-
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+import { apiClient } from '../api/client'
 
 export interface User {
   id: number
@@ -37,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = async (email: string, password: string) => {
-    const data = await ky.post(`${apiUrl}/users/login`, {
+    const data = await apiClient.post('users/login', {
       json: { email, password },
     }).json<{ user: User; token: string }>()
     
@@ -48,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const register = async (name: string, email: string, password: string) => {
-    const user = await ky.post(`${apiUrl}/users/register`, {
+    const user = await apiClient.post('users/register', {
       json: { name, email, password },
     }).json<User>()
     
@@ -59,9 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!token) return
 
     try {
-      await ky.post(`${apiUrl}/users/logout`, {
-        headers: { Authorization: token },
-      })
+      await apiClient.post('users/logout')
     } catch (error) {
       console.error('Logout error:', error)
     } finally {

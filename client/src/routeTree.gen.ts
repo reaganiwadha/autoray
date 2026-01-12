@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as MediaBinRouteImport } from './routes/media-bin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
+import { Route as DebugUploadRouteImport } from './routes/debug/upload'
 import { Route as DebugStatusRouteImport } from './routes/debug/status'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
@@ -29,6 +30,11 @@ const IndexRoute = IndexRouteImport.update({
 const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DebugUploadRoute = DebugUploadRouteImport.update({
+  id: '/debug/upload',
+  path: '/debug/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DebugStatusRoute = DebugStatusRouteImport.update({
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/debug/status': typeof DebugStatusRoute
+  '/debug/upload': typeof DebugUploadRoute
   '/projects': typeof ProjectsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/debug/status': typeof DebugStatusRoute
+  '/debug/upload': typeof DebugUploadRoute
   '/projects': typeof ProjectsIndexRoute
 }
 export interface FileRoutesById {
@@ -70,6 +78,7 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
   '/debug/status': typeof DebugStatusRoute
+  '/debug/upload': typeof DebugUploadRoute
   '/projects/': typeof ProjectsIndexRoute
 }
 export interface FileRouteTypes {
@@ -80,6 +89,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/register'
     | '/debug/status'
+    | '/debug/upload'
     | '/projects'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -88,6 +98,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/register'
     | '/debug/status'
+    | '/debug/upload'
     | '/projects'
   id:
     | '__root__'
@@ -96,6 +107,7 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/auth/register'
     | '/debug/status'
+    | '/debug/upload'
     | '/projects/'
   fileRoutesById: FileRoutesById
 }
@@ -105,6 +117,7 @@ export interface RootRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
   DebugStatusRoute: typeof DebugStatusRoute
+  DebugUploadRoute: typeof DebugUploadRoute
   ProjectsIndexRoute: typeof ProjectsIndexRoute
 }
 
@@ -129,6 +142,13 @@ declare module '@tanstack/react-router' {
       path: '/projects'
       fullPath: '/projects'
       preLoaderRoute: typeof ProjectsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/debug/upload': {
+      id: '/debug/upload'
+      path: '/debug/upload'
+      fullPath: '/debug/upload'
+      preLoaderRoute: typeof DebugUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/debug/status': {
@@ -161,6 +181,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,
   DebugStatusRoute: DebugStatusRoute,
+  DebugUploadRoute: DebugUploadRoute,
   ProjectsIndexRoute: ProjectsIndexRoute,
 }
 export const routeTree = rootRouteImport

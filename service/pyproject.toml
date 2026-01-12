@@ -10,6 +10,8 @@ dependencies = [
     "uvicorn[standard]",
     "email-validator",
     "psycopg2-binary",
+    "minio",
+    "python-multipart",
 ]
 
 [project.scripts]

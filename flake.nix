@@ -18,6 +18,8 @@
             goose
             postgresql
             process-compose
+            minio
+            minio-client
           ];
 
           shellHook = ''

@@ -37,10 +37,57 @@ processes:
       createdb:
         condition: process_completed_successfully
 
+  minio:
+    command: |
+      mkdir -p .data/minio
+      minio server .data/minio --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    readiness_probe:
+      http_get:
+        host: localhost
+        port: 9000
+        path: /minio/health/live
+      initial_delay_seconds: 2
+      period_seconds: 5
+  
+  create-bucket:
+    command: |
+      mc alias set local http://localhost:9000 minioadmin minioadmin
+      mc mb local/medias || true
+      mc anonymous set public local/medias
+    depends_on:
+      minio:
+        condition: process_healthy
+
   service:
     command: |
       cd service
       uv run uvicorn service.main:app --reload --port 8000
+    environment:
+      - S3_ENDPOINT=localhost:9000
+      - S3_ACCESS_KEY=minioadmin
+      - S3_SECRET_KEY=minioadmin
+      - S3_BUCKET=medias
+      - S3_SECURE=false
+    readiness_probe:
+      http_get:
+        host: localhost
+        port: 8000
+        path: /status
+      initial_delay_seconds: 2
+      period_seconds: 5
     depends_on:
       migrations:
         condition: process_completed_successfully
+      create-bucket:
+        condition: process_completed_successfully
+
+  client:
+    command: |
+      cd client
+      yarn dev
+    depends_on:
+      service:
+        condition: process_healthy

@@ -5,8 +5,6 @@ import os
 database_url = os.environ.get("DATABASE_URL", "sqlite:///database.db")
 engine = create_engine(database_url)
 
-# SQLModel.metadata.create_all(engine)
-
 from fastapi import FastAPI, Depends, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -25,6 +23,13 @@ from service.controllers.project_controller import (
     update_project,
     delete_project,
 )
+from service.dtos.media_dto import MediaResponse
+from service.controllers.media_controller import upload_media, get_user_media
+from fastapi import UploadFile, File
+import random
+import string
+import io
+import os
 
 
 app = FastAPI()
@@ -120,6 +125,80 @@ def delete_existing_project(
     user = get_current_user(Authorization, session)
     delete_project(project_id, user, session)
     return {"status": "ok"}
+
+
+@app.post("/media/upload", response_model=MediaResponse)
+def upload_file(
+    file: UploadFile = File(...),
+    Authorization: str = Header(...),
+    session: Session = Depends(get_session),
+):
+    user = get_current_user(Authorization, session)
+    media = upload_media(file, user, session)
+    return MediaResponse(
+        id=media.id,
+        filename=media.filename,
+        content_type=media.content_type,
+        size=media.size,
+        s3_key=media.s3_key,
+        created_at=media.created_at,
+    )
+
+
+@app.get("/media", response_model=list[MediaResponse])
+def list_media(
+    Authorization: str = Header(...),
+    session: Session = Depends(get_session),
+):
+    user = get_current_user(Authorization, session)
+    medias = get_user_media(user, session)
+    return [
+        MediaResponse(
+            id=m.id,
+            filename=m.filename,
+            content_type=m.content_type,
+            size=m.size,
+            s3_key=m.s3_key,
+            created_at=m.created_at,
+        )
+        for m in medias
+    ]
+
+
+@app.post("/debug/upload", response_model=MediaResponse)
+def debug_upload_random_file(
+    Authorization: str = Header(...),
+    session: Session = Depends(get_session),
+):
+    """
+    Generates a random 1MB file and uploads it.
+    """
+    user = get_current_user(Authorization, session)
+    
+    # Generate random content (1MB)
+    size = 1024 * 1024
+    content = os.urandom(size)
+    
+    # Generate random filename
+    random_name = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+    filename = f"debug_{random_name}.bin"
+    
+    # Create UploadFile-like object
+    file_object = io.BytesIO(content)
+    from starlette.datastructures import Headers
+    headers = Headers({"content-type": "application/octet-stream"})
+    upload_file = UploadFile(file=file_object, filename=filename, size=size, headers=headers)
+    
+    media = upload_media(upload_file, user, session)
+    
+    return MediaResponse(
+        id=media.id,
+        filename=media.filename,
+        content_type=media.content_type,
+        size=media.size,
+        s3_key=media.s3_key,
+        created_at=media.created_at,
+    )
 
 
 def run():
