@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState, useRef, useEffect } from 'react'
 import { uploadMedia, getMedia, type MediaResponse } from '../../api/media'
-import { Upload, X, FileIcon, AlertCircle, CheckCircle2, Loader2, Image as ImageIcon } from 'lucide-react'
+import { Upload, X, FileIcon, AlertCircle, Loader2 } from 'lucide-react'
 
 export const Route = createFileRoute('/debug/upload')({
   component: DebugUpload,

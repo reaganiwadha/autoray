@@ -1,8 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useState, useRef } from 'react'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { getProjects, createProject, updateProject, deleteProject, type Project } from '../../api/projects'
-import { Plus, LayoutGrid, MoreVertical, Edit2, Trash2, X } from 'lucide-react'
+import { Plus, LayoutGrid, MoreVertical, Edit2, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 export const Route = createFileRoute('/projects/')({
@@ -137,19 +137,27 @@ function ProjectsPage() {
               className="group flex flex-col gap-2 relative"
             >
               {/* Thumbnail */}
-              <div className="aspect-[16/10] bg-gray-100 dark:bg-[#111] border border-transparent group-hover:border-gray-300 dark:group-hover:border-gray-700 rounded-lg transition-all overflow-hidden relative cursor-pointer">
+              <Link 
+                to="/projects/$projectId" 
+                params={{ projectId: String(project.id) }}
+                className="aspect-[16/10] bg-gray-100 dark:bg-[#111] border border-transparent group-hover:border-gray-300 dark:group-hover:border-gray-700 rounded-lg transition-all overflow-hidden relative"
+              >
                  {/* Placeholder Content */}
                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/5 dark:bg-white/5">
                     <span className="text-xs font-medium px-3 py-1 bg-white dark:bg-black rounded-full shadow-sm">Open</span>
                  </div>
-              </div>
+              </Link>
               
               {/* Info */}
               <div className="px-1 flex items-start justify-between">
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-sm truncate leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors cursor-pointer">
+                <div className="min-w-0 flex-1">
+                  <Link 
+                    to="/projects/$projectId" 
+                    params={{ projectId: String(project.id) }}
+                    className="font-semibold text-sm truncate block leading-tight hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
                     {project.name}
-                  </h3>
+                  </Link>
                    <p className="text-[11px] text-gray-500 dark:text-gray-500 mt-1 font-medium">
                     Edited {formatRelativeTime(project.updated_at)}
                   </p>
@@ -159,6 +167,7 @@ function ProjectsPage() {
                 <div className="relative">
                   <button 
                     onClick={(e) => {
+                      e.preventDefault()
                       e.stopPropagation()
                       setMenuOpenId(menuOpenId === project.id ? null : project.id)
                     }}

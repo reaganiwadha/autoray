@@ -11,10 +11,14 @@ from starlette.datastructures import Headers
 
 from service.controllers.media_controller import get_user_media, upload_media
 from service.controllers.project_controller import (
+    add_media_to_project,
     create_project,
     delete_project,
+    get_project_by_id,
+    get_project_media,
     get_user_projects,
     update_project,
+    update_project_media_status,
 )
 from service.controllers.user_controller import (
     create_user,
@@ -25,6 +29,7 @@ from service.controllers.user_controller import (
 from service.core.database import get_session
 from service.dtos.media_dto import MediaResponse
 from service.dtos.project_dto import ProjectCreate, ProjectResponse, ProjectUpdate
+from service.dtos.project_media_dto import ProjectMediaResponse
 from service.dtos.thumbnail_dto import ThumbnailResponse
 from service.dtos.user_dto import LoginResponse, UserCreate, UserLogin, UserResponse
 from service.models import user
@@ -99,6 +104,17 @@ def list_projects(
     return [ProjectResponse.from_db_project(p) for p in projects]
 
 
+@app.get("/projects/{project_id}", response_model=ProjectResponse)
+def get_single_project(
+    project_id: int,
+    Authorization: str = Header(...),
+    session: Session = Depends(get_session),
+):
+    user = get_current_user(Authorization, session)
+    project = get_project_by_id(project_id, user, session)
+    return ProjectResponse.from_db_project(project)
+
+
 @app.put("/projects/{project_id}", response_model=ProjectResponse)
 def update_existing_project(
     project_id: int,
@@ -120,6 +136,121 @@ def delete_existing_project(
     user = get_current_user(Authorization, session)
     delete_project(project_id, user, session)
     return {"status": "ok"}
+
+
+@app.get("/projects/{project_id}/media", response_model=list[ProjectMediaResponse])
+def list_project_media(
+    project_id: int,
+    Authorization: str = Header(...),
+    session: Session = Depends(get_session),
+):
+    user = get_current_user(Authorization, session)
+    results = get_project_media(project_id, user, session)
+    return [
+        ProjectMediaResponse(
+            project_id=assoc.project_id,
+            media_id=assoc.media_id,
+            is_unused=assoc.is_unused,
+            created_at=assoc.created_at,
+            media=MediaResponse(
+                id=m.id,
+                filename=m.filename,
+                content_type=m.content_type,
+                size=m.size,
+                s3_key=m.s3_key,
+                created_at=m.created_at,
+                binary_metadata=m.binary_metadata,
+                thumbnails=[ThumbnailResponse.model_validate(t) for t in m.thumbnails],
+            ),
+        )
+        for assoc, m in results
+    ]
+
+
+@app.post("/projects/{project_id}/media/{media_id}", response_model=ProjectMediaResponse)
+def add_media_to_project_endpoint(
+    project_id: int,
+    media_id: int,
+    Authorization: str = Header(...),
+    session: Session = Depends(get_session),
+):
+    user = get_current_user(Authorization, session)
+    add_media_to_project(project_id, media_id, user, session)
+    
+    # Fetch the specific assoc and media
+    statement = (
+        select(ProjectMedia, Media)
+        .join(Media, ProjectMedia.media_id == Media.id)
+        .where(ProjectMedia.project_id == project_id, ProjectMedia.media_id == media_id)
+        .options(selectinload(Media.thumbnails))
+    )
+    result = session.exec(statement).first()
+    if not result:
+        raise HTTPException(status_code=500, detail="Failed to retrieve added media")
+
+    assoc, m = result
+    return ProjectMediaResponse(
+        project_id=assoc.project_id,
+        media_id=assoc.media_id,
+        is_unused=assoc.is_unused,
+        created_at=assoc.created_at,
+        media=MediaResponse(
+            id=m.id,
+            filename=m.filename,
+            content_type=m.content_type,
+            size=m.size,
+            s3_key=m.s3_key,
+            created_at=m.created_at,
+            binary_metadata=m.binary_metadata,
+            thumbnails=[ThumbnailResponse.model_validate(t) for t in m.thumbnails],
+        ),
+    )
+
+
+from pydantic import BaseModel
+
+class MediaStatusUpdate(BaseModel):
+    is_unused: bool
+
+@app.patch("/projects/{project_id}/media/{media_id}", response_model=ProjectMediaResponse)
+def update_project_media(
+    project_id: int,
+    media_id: int,
+    data: MediaStatusUpdate,
+    Authorization: str = Header(...),
+    session: Session = Depends(get_session),
+):
+    user = get_current_user(Authorization, session)
+    update_project_media_status(project_id, media_id, data.is_unused, user, session)
+    
+    # Fetch the specific assoc and media
+    statement = (
+        select(ProjectMedia, Media)
+        .join(Media, ProjectMedia.media_id == Media.id)
+        .where(ProjectMedia.project_id == project_id, ProjectMedia.media_id == media_id)
+        .options(selectinload(Media.thumbnails))
+    )
+    result = session.exec(statement).first()
+    if not result:
+        raise HTTPException(status_code=404, detail="Assoc not found after update")
+
+    assoc, m = result
+    return ProjectMediaResponse(
+        project_id=assoc.project_id,
+        media_id=assoc.media_id,
+        is_unused=assoc.is_unused,
+        created_at=assoc.created_at,
+        media=MediaResponse(
+            id=m.id,
+            filename=m.filename,
+            content_type=m.content_type,
+            size=m.size,
+            s3_key=m.s3_key,
+            created_at=m.created_at,
+            binary_metadata=m.binary_metadata,
+            thumbnails=[ThumbnailResponse.model_validate(t) for t in m.thumbnails],
+        ),
+    )
 
 
 @app.post("/media/upload", response_model=MediaResponse)
