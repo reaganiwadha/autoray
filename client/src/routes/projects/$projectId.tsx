@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { getProject, getProjectMedia, updateProjectMedia, addMediaToProject, type Project, type ProjectMedia } from '../../api/projects'
+import { getProject, getProjectMedia, updateProjectMedia, addMediaToProject, chatProject, type Project, type ProjectMedia } from '../../api/projects'
 import { uploadMedia, type MediaResponse } from '../../api/media'
 import { useSocket, type SocketEvent } from '../../contexts/SocketContext'
 import { 
@@ -22,7 +22,9 @@ import {
     Calendar,
     FileText,
     Info,
-    Sparkles
+    Sparkles,
+    MessageSquare,
+    Send
 } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -51,27 +53,7 @@ function ProjectDetail() {
 
   useSocket((event: SocketEvent) => {
     if (event.type === 'MEDIA_ANALYSIS_COMPLETE') {
-      setProjectMedia(prev => prev.map(pm => {
-        if (pm.media_id === event.media_id) {
-            const existingSummary = pm.media.summaries.find(s => s.type === event.analysis_type)
-            if (existingSummary) return pm
-            
-            return {
-                ...pm,
-                media: {
-                    ...pm.media,
-                    summaries: [...pm.media.summaries, {
-                        id: Math.random(),
-                        type: event.analysis_type,
-                        summary: event.summary,
-                        model_name: 'openai/gpt-5-image-mini',
-                        created_at: new Date().toISOString()
-                    }]
-                }
-            }
-        }
-        return pm
-      }))
+      loadData(true)
     }
   })
 
@@ -79,8 +61,8 @@ function ProjectDetail() {
     loadData()
   }, [projectId])
 
-  const loadData = async () => {
-    setIsLoading(true)
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true)
     try {
       const [projData, mediaData] = await Promise.all([
         getProject(projectId),
@@ -91,7 +73,7 @@ function ProjectDetail() {
     } catch (err) {
       console.error('Failed to load project data', err)
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }
 
@@ -215,12 +197,12 @@ function ProjectDetail() {
                 s3BaseUrl={s3BaseUrl}
             />
             )}
-            {activeTab === 'timeline' && <Placeholder tab="Timeline" description="AI-powered non-linear editor timeline goes here." />}
+            {activeTab === 'timeline' && <Timeline media={projectMedia} />}
             {activeTab === 'export' && <Placeholder tab="Export" description="Render and download your final video." />}
         </div>
 
-        {/* Right Sidebar Detail Pane */}
-        {selectedMedia && (
+        {/* Right Sidebar */}
+        {activeTab === 'media' && selectedMedia && (
             <div className="w-96 border-l border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-auto animate-in slide-in-from-right duration-200">
                 <DetailPane 
                     pm={selectedMedia} 
@@ -229,6 +211,11 @@ function ProjectDetail() {
                     onToggleUnused={handleToggleUnused}
                     s3BaseUrl={s3BaseUrl}
                 />
+            </div>
+        )}
+        {activeTab === 'timeline' && (
+            <div className="w-96 border-l border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden flex flex-col animate-in slide-in-from-right duration-200">
+                <ChatPane projectId={projectId} />
             </div>
         )}
       </div>
@@ -705,5 +692,125 @@ function Placeholder({ tab, description }: { tab: string, description: string })
       <h2 className="text-xl font-bold mb-2">{tab} Placeholder</h2>
       <p className="text-[var(--text-secondary)]">{description}</p>
     </div>
+  )
+}
+
+interface ChatMessage {
+    role: 'user' | 'assistant'
+    content: string
+}
+
+function ChatPane({ projectId }: { projectId: string }) {
+    const [messages, setMessages] = useState<ChatMessage[]>([
+        { role: 'assistant', content: "Hi! I'm Autoray, your AI video editor. How can I help you with your project today?" }
+    ])
+    const [input, setInput] = useState('')
+    const [isTyping, setIsTyping] = useState(false)
+    const scrollRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+        }
+    }, [messages])
+
+    const handleSend = async () => {
+        if (!input.trim() || isTyping) return
+
+        const userMsg = input.trim()
+        setInput('')
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }])
+        setIsTyping(true)
+
+        try {
+            const { response } = await chatProject(projectId, userMsg)
+            setMessages(prev => [...prev, { role: 'assistant', content: response }])
+        } catch (err) {
+            console.error('Chat error:', err)
+            setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I'm having trouble connecting right now." }])
+        } finally {
+            setIsTyping(false)
+        }
+    }
+
+    return (
+        <div className="flex flex-col h-full bg-[var(--bg-secondary)]">
+            <div className="flex items-center gap-2 p-4 border-b border-[var(--border-color)] bg-[var(--bg-primary)]">
+                <MessageSquare size={16} className="text-[var(--brand-accent)]" />
+                <h3 className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)]">AI Assistant</h3>
+            </div>
+            
+            <div ref={scrollRef} className="flex-1 overflow-auto p-4 space-y-4">
+                {messages.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-[85%] p-3 rounded-2xl text-xs leading-relaxed ${
+                            msg.role === 'user' 
+                            ? 'bg-[var(--brand-accent)] text-[var(--bg-primary)] font-medium' 
+                            : 'bg-[var(--accents-1)] text-[var(--text-primary)] border border-[var(--border-color)]'
+                        }`}>
+                            {msg.content}
+                        </div>
+                    </div>
+                ))}
+                {isTyping && (
+                    <div className="flex justify-start">
+                        <div className="bg-[var(--accents-1)] p-3 rounded-2xl border border-[var(--border-color)]">
+                            <Loader2 size={14} className="animate-spin text-[var(--text-secondary)]" />
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <div className="p-4 border-t border-[var(--border-color)] bg-[var(--bg-primary)]">
+                <div className="relative">
+                    <input 
+                        type="text"
+                        value={input}
+                        onChange={e => setInput(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && handleSend()}
+                        placeholder="Ask Autoray anything..."
+                        className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl py-3 pl-4 pr-12 text-xs outline-none focus:border-[var(--text-secondary)] transition-colors"
+                    />
+                    <button 
+                        onClick={handleSend}
+                        disabled={!input.trim() || isTyping}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-30 transition-colors"
+                    >
+                        <Send size={16} />
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function Timeline({ media }: { media: ProjectMedia[] }) {
+    return (
+        <div className="h-full flex flex-col gap-6">
+            <div className="flex-1 bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-color)] border-dashed flex flex-col items-center justify-center p-12 text-center">
+                <Clock size={48} className="text-[var(--accents-2)] mb-4" />
+                <h3 className="text-lg font-bold mb-2">Editor Timeline</h3>
+                <p className="text-sm text-[var(--text-secondary)] max-w-md">
+                    This is where you'll arrange your clips. Use the AI chat on the right to automatically generate edits or drag clips here manually.
+                </p>
+            </div>
+            
+            <div className="h-48 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl p-4 flex flex-col">
+                <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">Timeline Tracks</h4>
+                    <div className="flex gap-2 text-[10px] text-[var(--text-secondary)] font-medium">
+                        <span>00:00:00</span>
+                        <span>/</span>
+                        <span>00:00:00</span>
+                    </div>
+                </div>
+                <div className="flex-1 space-y-2">
+                    <div className="h-8 bg-[var(--accents-1)] rounded-lg border border-[var(--border-color)] relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-[1px] h-full bg-red-500 z-10" />
+                    </div>
+                    <div className="h-8 bg-[var(--accents-1)] rounded-lg border border-[var(--border-color)]" />
+                </div>
+            </div>
+        </div>
   )
 }

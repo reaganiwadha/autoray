@@ -40,6 +40,7 @@ from service.models import user
 from service.models.media import Media
 from service.models.project_media import ProjectMedia
 from service.utils.analyzer import start_analyzer_job
+from service.utils.chat import chat_with_project
 
 app = FastAPI()
 
@@ -264,6 +265,24 @@ def update_project_media(
         created_at=assoc.created_at,
         media=MediaResponse.model_validate(m),
     )
+
+
+class ChatRequest(BaseModel):
+    message: str
+
+@app.post("/projects/{project_id}/chat")
+async def project_chat(
+    project_id: int,
+    request: ChatRequest,
+    Authorization: str = Header(...),
+    session: Session = Depends(get_session),
+):
+    user = get_current_user(Authorization, session)
+    # Verify project belongs to user
+    get_project_by_id(project_id, user, session)
+    
+    response = await chat_with_project(user.id, project_id, request.message)
+    return {"response": response}
 
 
 @app.post("/media/upload", response_model=MediaResponse)

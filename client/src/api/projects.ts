@@ -55,3 +55,9 @@ export async function updateProjectMedia(projectId: string, mediaId: number, isU
         json: { is_unused: isUnused }
     }).json()
 }
+
+export async function chatProject(projectId: string, message: string): Promise<{ response: string }> {
+    return apiClient.post(`projects/${projectId}/chat`, {
+        json: { message }
+    }).json()
+}

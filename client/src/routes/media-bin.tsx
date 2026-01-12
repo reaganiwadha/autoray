@@ -44,25 +44,7 @@ function MediaBinPage() {
 
   useSocket((event: SocketEvent) => {
     if (event.type === 'MEDIA_ANALYSIS_COMPLETE') {
-      setMedia(prev => prev.map(m => {
-        if (m.id === event.media_id) {
-            // Check if summary already exists
-            const existingSummary = m.summaries.find(s => s.type === event.analysis_type)
-            if (existingSummary) return m
-            
-            return {
-                ...m,
-                summaries: [...m.summaries, {
-                    id: Math.random(), // Temporary ID if needed
-                    type: event.analysis_type,
-                    summary: event.summary,
-                    model_name: 'openai/gpt-5-image-mini', // Should come from event if possible
-                    created_at: new Date().toISOString()
-                }]
-            }
-        }
-        return m
-      }))
+      loadMedia(true)
     }
   })
 
@@ -70,15 +52,15 @@ function MediaBinPage() {
     loadMedia()
   }, [])
 
-  const loadMedia = async () => {
-    setIsLoading(true)
+  const loadMedia = async (silent = false) => {
+    if (!silent) setIsLoading(true)
     try {
       const data = await getMedia()
       setMedia(data)
     } catch (err) {
       console.error('Failed to load media', err)
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }
 

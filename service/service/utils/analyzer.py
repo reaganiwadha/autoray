@@ -77,8 +77,7 @@ class AnalyzerJob:
                         await manager.send_personal_message({
                             "type": "MEDIA_ANALYSIS_COMPLETE",
                             "media_id": media.id,
-                            "analysis_type": "visual",
-                            "summary": summary_text
+                            "analysis_type": "visual"
                         }, media.user_id)
                         
                 except Exception as e:
