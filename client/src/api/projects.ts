@@ -22,3 +22,16 @@ export async function createProject(token: string, name: string): Promise<Projec
     json: { name },
   }).json()
 }
+
+export async function updateProject(token: string, id: number, name: string): Promise<Project> {
+  return ky.put(`${apiUrl}/projects/${id}`, {
+    headers: { Authorization: token },
+    json: { name },
+  }).json()
+}
+
+export async function deleteProject(token: string, id: number): Promise<void> {
+  return ky.delete(`${apiUrl}/projects/${id}`, {
+    headers: { Authorization: token },
+  }).json()
+}

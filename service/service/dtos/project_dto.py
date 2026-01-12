@@ -5,6 +5,9 @@ from service.models.project import Project
 class ProjectCreate(BaseModel):
     name: str
 
+class ProjectUpdate(BaseModel):
+    name: str
+
 class ProjectResponse(BaseModel):
     id: int
     name: str

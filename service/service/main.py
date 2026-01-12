@@ -1,9 +1,11 @@
 from service.models import user, project
 from sqlmodel import SQLModel, create_engine, Session, select
+import os
 
-engine = create_engine("sqlite:///database.db")
+database_url = os.environ.get("DATABASE_URL", "sqlite:///database.db")
+engine = create_engine(database_url)
 
-SQLModel.metadata.create_all(engine)
+# SQLModel.metadata.create_all(engine)
 
 from fastapi import FastAPI, Depends, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,8 +18,13 @@ from service.controllers.user_controller import (
     get_current_user,
     get_session,
 )
-from service.dtos.project_dto import ProjectCreate, ProjectResponse
-from service.controllers.project_controller import create_project, get_user_projects
+from service.dtos.project_dto import ProjectCreate, ProjectResponse, ProjectUpdate
+from service.controllers.project_controller import (
+    create_project,
+    get_user_projects,
+    update_project,
+    delete_project,
+)
 
 
 app = FastAPI()
@@ -90,6 +97,29 @@ def list_projects(
     user = get_current_user(Authorization, session)
     projects = get_user_projects(user, session)
     return [ProjectResponse.from_db_project(p) for p in projects]
+
+
+@app.put("/projects/{project_id}", response_model=ProjectResponse)
+def update_existing_project(
+    project_id: int,
+    project_data: ProjectUpdate,
+    Authorization: str = Header(...),
+    session: Session = Depends(get_session),
+):
+    user = get_current_user(Authorization, session)
+    project = update_project(project_id, project_data, user, session)
+    return ProjectResponse.from_db_project(project)
+
+
+@app.delete("/projects/{project_id}")
+def delete_existing_project(
+    project_id: int,
+    Authorization: str = Header(...),
+    session: Session = Depends(get_session),
+):
+    user = get_current_user(Authorization, session)
+    delete_project(project_id, user, session)
+    return {"status": "ok"}
 
 
 def run():

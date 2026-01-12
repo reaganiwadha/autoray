@@ -1,0 +1,46 @@
+version: "0.5"
+
+processes:
+  postgres:
+    command: |
+      mkdir -p "$PGHOST"
+      if [ ! -d "$PGDATA" ]; then
+        initdb -D "$PGDATA" --no-locale --encoding=UTF8 --username=postgres
+        echo "host all all 127.0.0.1/32 trust" >> "$PGDATA/pg_hba.conf"
+        echo "host all all ::1/128 trust" >> "$PGDATA/pg_hba.conf"
+      fi
+      postgres -D "$PGDATA" -k "$PGHOST" -p "$PGPORT"
+    readiness_probe:
+      exec:
+        command: pg_isready -h "$PGHOST" -p "$PGPORT"
+      initial_delay_seconds: 2
+      period_seconds: 5
+      timeout_seconds: 2
+      success_threshold: 1
+    availability:
+      restart: always
+
+  createdb:
+    command: |
+      createdb -h "$PGHOST" -p "$PGPORT" -U postgres autoray || true
+    depends_on:
+      postgres:
+        condition: process_healthy
+
+  migrations:
+    command: |
+      export GOOSE_DRIVER=postgres
+      export GOOSE_DBSTRING=$DATABASE_URL
+      export GOOSE_MIGRATION_DIR=./pg-migrations
+      goose up
+    depends_on:
+      createdb:
+        condition: process_completed_successfully
+
+  service:
+    command: |
+      cd service
+      uv run uvicorn service.main:app --reload --port 8000
+    depends_on:
+      migrations:
+        condition: process_completed_successfully
