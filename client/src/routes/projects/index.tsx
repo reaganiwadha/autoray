@@ -1,18 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
+import { getProjects, createProject, type Project } from '../../api/projects'
 import { Plus, LayoutGrid } from 'lucide-react'
+import { formatDistanceToNow } from 'date-fns'
 
 export const Route = createFileRoute('/projects/')({
   component: ProjectsPage,
 })
-
-interface Project {
-  id: number
-  name: string
-  created_at: string
-  updated_at: string
-}
 
 function ProjectsPage() {
   const { user, token } = useAuth()
@@ -22,20 +17,12 @@ function ProjectsPage() {
   const [newProjectName, setNewProjectName] = useState('')
 
   useEffect(() => {
-    if (!user) return
+    if (!user || !token) return
 
     const fetchProjects = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-        const response = await fetch(`${apiUrl}/projects`, {
-          headers: {
-            Authorization: token || '',
-          },
-        })
-        if (response.ok) {
-          const data = await response.json()
-          setProjects(data)
-        }
+        const data = await getProjects(token)
+        setProjects(data)
       } catch (error) {
         console.error('Failed to fetch projects', error)
       } finally {
@@ -48,47 +35,24 @@ function ProjectsPage() {
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newProjectName.trim()) return
+    if (!newProjectName.trim() || !token) return
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-      const response = await fetch(`${apiUrl}/projects`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: token || '',
-        },
-        body: JSON.stringify({ name: newProjectName }),
-      })
-
-      if (response.ok) {
-        const newProject = await response.json()
-        setProjects([newProject, ...projects])
-        setShowCreateModal(false)
-        setNewProjectName('')
-      }
+      const newProject = await createProject(token, newProjectName.trim())
+      setProjects([newProject, ...projects])
+      setShowCreateModal(false)
+      setNewProjectName('')
     } catch (error) {
       console.error('Failed to create project', error)
     }
   }
 
-  // Format relative time (e.g. "2h ago")
-  const timeAgo = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-    
-    let interval = seconds / 31536000
-    if (interval > 1) return Math.floor(interval) + "y ago"
-    interval = seconds / 2592000
-    if (interval > 1) return Math.floor(interval) + "mo ago"
-    interval = seconds / 86400
-    if (interval > 1) return Math.floor(interval) + "d ago"
-    interval = seconds / 3600
-    if (interval > 1) return Math.floor(interval) + "h ago"
-    interval = seconds / 60
-    if (interval > 1) return Math.floor(interval) + "m ago"
-    return Math.floor(seconds) + "s ago"
+  const formatRelativeTime = (dateString: string) => {
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: true })
+    } catch {
+      return 'unknown'
+    }
   }
 
   if (loading) return <div className="p-8 text-sm text-gray-500">Loading projects...</div>
@@ -146,8 +110,8 @@ function ProjectsPage() {
                 <h3 className="font-semibold text-sm truncate leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   {project.name}
                 </h3>
-                <p className="text-[11px] text-gray-500 dark:text-gray-500 mt-1 font-medium">
-                  Edited {timeAgo(project.updated_at)}
+                 <p className="text-[11px] text-gray-500 dark:text-gray-500 mt-1 font-medium">
+                  Edited {formatRelativeTime(project.updated_at)}
                 </p>
               </div>
             </div>
