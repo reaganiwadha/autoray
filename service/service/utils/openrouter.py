@@ -10,8 +10,7 @@ class OpenRouterClient:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(OpenRouterClient, cls).__new__(cls)
-            # cls._instance.api_key = os.getenv("OPENROUTER_API_KEY")
-            cls._instance.api_key = "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"
+            cls._instance.api_key = os.getenv("OPENROUTER_API_KEY")
             cls._instance.base_url = "https://openrouter.ai/api/v1"
             cls._instance.site_url = os.getenv("SITE_URL", "http://localhost:3000")
             cls._instance.site_name = os.getenv("SITE_NAME", "Autoray")

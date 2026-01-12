@@ -23,6 +23,9 @@
           ];
 
           shellHook = ''
+            if [ -f .env ]; then
+              set -a; source .env; set +a
+            fi
             export PGDATA=$PWD/.data/pgdata
             export PGHOST=$PWD/.data/pgrun
             export PGPORT=5432
