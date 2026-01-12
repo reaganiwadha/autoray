@@ -1,8 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { getProject, getProjectMedia, updateProjectMedia, addMediaToProject, chatProject, type Project, type ProjectMedia } from '../../api/projects'
+import { getProject, getProjectMedia, updateProjectMedia, addMediaToProject, chatProjectStream, type Project, type ProjectMedia } from '../../api/projects'
 import { uploadMedia, type MediaResponse } from '../../api/media'
 import { useSocket, type SocketEvent } from '../../contexts/SocketContext'
+import ReactMarkdown from 'react-markdown'
 import { 
     LayoutGrid, 
     List as ListIcon,
@@ -686,6 +687,15 @@ function AnalysisProgressBar({ media, height = 2 }: { media: MediaResponse, heig
     )
 }
 
+function MiniThumb({ media, s3BaseUrl }: { media: any, s3BaseUrl: string }) {
+    const thumb = media.thumbnails?.find((t: any) => t.type === 'small') || media.thumbnails?.[0]
+    const thumbUrl = thumb ? `${s3BaseUrl}/thumbnails/${thumb.s3_key}` : null
+    const isVideo = media.content_type?.startsWith('video/')
+
+    if (thumbUrl) return <img src={thumbUrl} alt="" className="w-full h-full object-cover" />
+    return isVideo ? <FileVideo className="text-[var(--text-secondary)] m-auto" size={16} /> : <FileImage className="text-[var(--text-secondary)] m-auto" size={16} />
+}
+
 function Placeholder({ tab, description }: { tab: string, description: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-color)] border-dashed">
@@ -698,6 +708,8 @@ function Placeholder({ tab, description }: { tab: string, description: string })
 interface ChatMessage {
     role: 'user' | 'assistant'
     content: string
+    referencedMedia?: any[]
+    isSearching?: boolean
 }
 
 function ChatPane({ projectId }: { projectId: string }) {
@@ -707,6 +719,7 @@ function ChatPane({ projectId }: { projectId: string }) {
     const [input, setInput] = useState('')
     const [isTyping, setIsTyping] = useState(false)
     const scrollRef = useRef<HTMLDivElement>(null)
+    const s3BaseUrl = 'http://localhost:9000'
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -722,12 +735,71 @@ function ChatPane({ projectId }: { projectId: string }) {
         setMessages(prev => [...prev, { role: 'user', content: userMsg }])
         setIsTyping(true)
 
+        // Add an empty assistant message that we'll stream into
+        setMessages(prev => [...prev, { role: 'assistant', content: '', referencedMedia: [] }])
+
         try {
-            const { response } = await chatProject(projectId, userMsg)
-            setMessages(prev => [...prev, { role: 'assistant', content: response }])
+            const reader = await chatProjectStream(projectId, userMsg)
+            const decoder = new TextDecoder()
+            let buffer = ''
+            
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+                
+                const chunk = decoder.decode(value, { stream: true })
+                buffer += chunk
+                
+                // Parse structured events
+                const lines = buffer.split('\n')
+                // Keep the last partial line in buffer
+                buffer = lines.pop() || ''
+                
+                for (const line of lines) {
+                    if (line.startsWith('EVENT:TOOL_CALL:')) {
+                        setMessages(prev => {
+                            const last = { ...prev[prev.length - 1] }
+                            last.isSearching = true
+                            return [...prev.slice(0, -1), last]
+                        })
+                    } else if (line.startsWith('EVENT:TOOL_RESULT:')) {
+                        const data = JSON.parse(line.replace('EVENT:TOOL_RESULT:', ''))
+                        if (data.function === 'search_media') {
+                            const results = JSON.parse(data.result)
+                            setMessages(prev => {
+                                const last = { ...prev[prev.length - 1] }
+                                last.referencedMedia = [...(last.referencedMedia || []), ...results]
+                                last.isSearching = false
+                                return [...prev.slice(0, -1), last]
+                            })
+                        }
+                    } else if (line.startsWith('TEXT:')) {
+                        const text = line.replace('TEXT:', '')
+                        setMessages(prev => {
+                            const last = { ...prev[prev.length - 1] }
+                            last.content += text
+                            return [...prev.slice(0, -1), last]
+                        })
+                    }
+                }
+            }
+            
+            // Handle any remaining text in TEXT: format if buffer has it
+            if (buffer.startsWith('TEXT:')) {
+                 const text = buffer.replace('TEXT:', '')
+                 setMessages(prev => {
+                    const last = { ...prev[prev.length - 1] }
+                    last.content += text
+                    return [...prev.slice(0, -1), last]
+                })
+            }
+
         } catch (err) {
             console.error('Chat error:', err)
-            setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I'm having trouble connecting right now." }])
+            setMessages(prev => [
+                ...prev.slice(0, -1),
+                { role: 'assistant', content: "Sorry, I'm having trouble connecting right now." }
+            ])
         } finally {
             setIsTyping(false)
         }
@@ -742,17 +814,43 @@ function ChatPane({ projectId }: { projectId: string }) {
             
             <div ref={scrollRef} className="flex-1 overflow-auto p-4 space-y-4">
                 {messages.map((msg, i) => (
-                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} gap-2`}>
                         <div className={`max-w-[85%] p-3 rounded-2xl text-xs leading-relaxed ${
                             msg.role === 'user' 
                             ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] font-medium shadow-sm' 
-                            : 'bg-[var(--accents-1)] text-[var(--text-primary)] border border-[var(--border-color)]'
+                            : 'bg-[var(--accents-1)] text-[var(--text-primary)] border border-[var(--border-color)] prose prose-invert prose-xs'
                         }`}>
-                            {msg.content}
+                            {msg.role === 'assistant' ? (
+                                <>
+                                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                    {msg.isSearching && (
+                                        <div className="flex items-center gap-2 mt-2 text-[10px] text-[var(--text-secondary)] italic animate-pulse">
+                                            <Search size={10} /> Searching media bin...
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                msg.content
+                            )}
                         </div>
+                        
+                        {msg.referencedMedia && msg.referencedMedia.length > 0 && (
+                            <div className="flex flex-wrap gap-2 max-w-[85%]">
+                                {msg.referencedMedia.map((m, mi) => (
+                                    <div key={mi} className="flex items-center gap-2 p-1.5 bg-[var(--accents-1)] border border-[var(--border-color)] rounded-lg">
+                                        <div className="w-8 h-8 rounded bg-black flex-shrink-0 overflow-hidden">
+                                            <MiniThumb media={m} s3BaseUrl={s3BaseUrl} />
+                                        </div>
+                                        <div className="min-w-0 pr-2">
+                                            <p className="text-[10px] font-bold truncate max-w-[100px]">{m.filename}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 ))}
-                {isTyping && (
+                {isTyping && messages[messages.length - 1]?.content === '' && !messages[messages.length - 1]?.isSearching && (
                     <div className="flex justify-start">
                         <div className="bg-[var(--accents-1)] p-3 rounded-2xl border border-[var(--border-color)]">
                             <Loader2 size={14} className="animate-spin text-[var(--text-secondary)]" />

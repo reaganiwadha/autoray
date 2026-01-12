@@ -6,6 +6,7 @@ import string
 import uvicorn
 from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
@@ -30,7 +31,6 @@ from service.controllers.user_controller import (
     logout_user,
 )
 from service.core.database import get_session
-from service.core.websocket_manager import manager
 from service.dtos.media_dto import MediaResponse
 from service.dtos.project_dto import ProjectCreate, ProjectResponse, ProjectUpdate
 from service.dtos.project_media_dto import ProjectMediaResponse
@@ -39,8 +39,15 @@ from service.dtos.user_dto import LoginResponse, UserCreate, UserLogin, UserResp
 from service.models import user
 from service.models.media import Media
 from service.models.project_media import ProjectMedia
+from service.core.websocket_manager import manager
 from service.utils.analyzer import start_analyzer_job
-from service.utils.chat import chat_with_project
+from service.utils.chat import chat_with_project, chat_with_project_stream
+
+async def verify_token(Authorization: str = Header(...), session: Session = Depends(get_session)):
+    try:
+        return get_user_by_token(Authorization, session)
+    except HTTPException:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 app = FastAPI()
 
@@ -274,15 +281,16 @@ class ChatRequest(BaseModel):
 async def project_chat(
     project_id: int,
     request: ChatRequest,
-    Authorization: str = Header(...),
+    user: user.User = Depends(verify_token),
     session: Session = Depends(get_session),
 ):
-    user = get_current_user(Authorization, session)
     # Verify project belongs to user
     get_project_by_id(project_id, user, session)
     
-    response = await chat_with_project(user.id, project_id, request.message)
-    return {"response": response}
+    return StreamingResponse(
+        chat_with_project_stream(user.id, project_id, request.message),
+        media_type="text/event-stream"
+    )
 
 
 @app.post("/media/upload", response_model=MediaResponse)

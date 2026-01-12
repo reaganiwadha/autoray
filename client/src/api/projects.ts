@@ -61,3 +61,26 @@ export async function chatProject(projectId: string, message: string): Promise<{
         json: { message }
     }).json()
 }
+
+export async function chatProjectStream(projectId: string, message: string): Promise<ReadableStreamDefaultReader<Uint8Array>> {
+    const token = localStorage.getItem('token')
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+    const response = await fetch(`${apiUrl}/projects/${projectId}/chat`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `${token}`
+        },
+        body: JSON.stringify({ message })
+    })
+
+    if (!response.ok) {
+        throw new Error('Failed to start chat stream')
+    }
+
+    if (!response.body) {
+        throw new Error('No response body')
+    }
+
+    return response.body.getReader()
+}

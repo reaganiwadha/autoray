@@ -95,3 +95,22 @@ code {
 .hover-opacity:hover {
   opacity: 0.7;
 }
+
+.prose-xs p {
+  margin-bottom: 0.5rem;
+}
+.prose-xs p:last-child {
+  margin-bottom: 0;
+}
+.prose-xs ul, .prose-xs ol {
+  margin-left: 1rem;
+  margin-bottom: 0.5rem;
+}
+.prose-xs li {
+  list-style-type: disc;
+}
+.prose-xs code {
+  background-color: var(--accents-2);
+  padding: 0.1rem 0.2rem;
+  border-radius: 0.2rem;
+}
