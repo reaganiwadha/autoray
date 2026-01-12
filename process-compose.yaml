@@ -73,6 +73,7 @@ processes:
       - S3_SECRET_KEY=minioadmin
       - S3_BUCKET=medias
       - S3_SECURE=false
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
     readiness_probe:
       http_get:
         host: localhost

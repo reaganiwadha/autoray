@@ -43,6 +43,10 @@ from service.utils.analyzer import start_analyzer_job
 
 app = FastAPI()
 
+if not os.getenv("OPENROUTER_API_KEY"):
+    print("FATAL: OPENROUTER_API_KEY not found in environment")
+    raise RuntimeError("OPENROUTER_API_KEY not found in environment")
+
 @app.on_event("startup")
 async def startup_event():
     start_analyzer_job()
