@@ -11,8 +11,9 @@ class MediaSummary(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     media_id: int = Field(foreign_key="media.id", index=True)
+    type: str = Field(index=True) # visual, transcription, audio, video
     summary: str
     model_name: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-    media: "Media" = Relationship(back_populates="summary")
+    media: "Media" = Relationship(back_populates="summaries")

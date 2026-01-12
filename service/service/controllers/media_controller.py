@@ -67,7 +67,7 @@ def get_user_media(user: User, session: Session) -> list[Media]:
         .where(Media.user_id == user.id)
         .options(
             selectinload(Media.thumbnails),
-            selectinload(Media.summary)
+            selectinload(Media.summaries)
         )
         .order_by(Media.created_at.desc())
     )

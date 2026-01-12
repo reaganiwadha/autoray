@@ -81,7 +81,7 @@ def get_project_media(project_id: int, user: User, session: Session):
         .where(ProjectMedia.project_id == project_id)
         .options(
             selectinload(Media.thumbnails),
-            selectinload(Media.summary)
+            selectinload(Media.summaries)
         )
     )
     return session.exec(statement).all()

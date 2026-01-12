@@ -30,12 +30,12 @@ class AnalyzerJob:
         # But get_session is a dependency, so we might need a different way or use it manually
         # For now, let's assume we can get a session from the factory
         with next(self.session_factory()) as session:
-            # Find media that are in at least one project and have no summary
+            # Find media that are in at least one project and have no 'visual' summary
             # and are images
             statement = (
                 select(Media)
                 .join(ProjectMedia, Media.id == ProjectMedia.media_id)
-                .outerjoin(MediaSummary, Media.id == MediaSummary.media_id)
+                .outerjoin(MediaSummary, (Media.id == MediaSummary.media_id) & (MediaSummary.type == "visual"))
                 .where(MediaSummary.id == None)
                 .where(Media.content_type.like("image/%"))
                 .distinct()
@@ -64,6 +64,7 @@ class AnalyzerJob:
                     if summary_text:
                         summary = MediaSummary(
                             media_id=media.id,
+                            type="visual",
                             summary=summary_text,
                             model_name="openai/gpt-5-image-mini"
                         )

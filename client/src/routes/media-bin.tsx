@@ -148,7 +148,7 @@ function MediaBinPage() {
         className="hidden" 
         multiple 
         onChange={handleFileUpload}
-        accept="video/*,image/*"
+        accept="video/*,image/*,audio/wav,audio/mpeg"
       />
       
       {/* Sub Header */}
@@ -398,26 +398,38 @@ function DetailPane({ media, onClose, onDownload, onDelete, s3BaseUrl }: {
                     </div>
                 </div>
 
-                <div className="p-4 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-xl space-y-3">
+                <div className="space-y-4">
                     <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs uppercase tracking-tighter">
                         <Sparkles size={14} /> Autoray Insights
                     </div>
-                    {media.summary ? (
-                        <p className="text-xs text-[var(--text-primary)] leading-relaxed">
-                            {media.summary.summary}
-                        </p>
-                    ) : (
-                        <>
-                            <div className="space-y-2">
-                                <div className="h-2 w-full bg-indigo-500/10 rounded animate-pulse" />
-                                <div className="h-2 w-[90%] bg-indigo-500/10 rounded animate-pulse" />
-                                <div className="h-2 w-[70%] bg-indigo-500/10 rounded animate-pulse" />
-                            </div>
-                            <p className="text-[10px] text-indigo-300/60 leading-relaxed italic">
-                                The AI summary for this {isVideo ? 'video' : 'image'} will be generated once the autoray indexing process is complete. {isVideo ? '(Video support coming soon)' : '(Must be added to a project to trigger analysis)'}
-                            </p>
-                        </>
-                    )}
+                    
+                    <InsightCategory 
+                        title="Visual Summarization" 
+                        summary={media.summaries.find(s => s.type === 'visual')?.summary}
+                        isAvailable={media.content_type.startsWith('image/') || media.content_type.startsWith('video/')}
+                        mediaType={media.content_type}
+                    />
+                    
+                    <InsightCategory 
+                        title="Transcription" 
+                        summary={media.summaries.find(s => s.type === 'transcription')?.summary}
+                        isAvailable={media.content_type.startsWith('audio/') || media.content_type.startsWith('video/')}
+                        mediaType={media.content_type}
+                    />
+
+                    <InsightCategory 
+                        title="Video Summarization" 
+                        summary={media.summaries.find(s => s.type === 'video')?.summary}
+                        isAvailable={media.content_type.startsWith('video/')}
+                        mediaType={media.content_type}
+                    />
+
+                    <InsightCategory 
+                        title="Audio Summarization" 
+                        summary={media.summaries.find(s => s.type === 'audio')?.summary}
+                        isAvailable={media.content_type.startsWith('audio/') || media.content_type.startsWith('video/')}
+                        mediaType={media.content_type}
+                    />
                 </div>
 
                 <div className="space-y-4">
@@ -442,6 +454,38 @@ function MetaItem({ label, value }: { label: string, value: string }) {
         <div>
             <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-tighter mb-0.5">{label}</p>
             <p className="font-medium truncate">{value}</p>
+        </div>
+    )
+}
+
+function InsightCategory({ title, summary, isAvailable, mediaType }: { 
+    title: string, 
+    summary?: string, 
+    isAvailable: boolean,
+    mediaType: string
+}) {
+    return (
+        <div className="p-4 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl space-y-2">
+            <div className="flex items-center justify-between">
+                <h5 className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">{title}</h5>
+                {!isAvailable && <span className="text-[9px] px-1.5 py-0.5 bg-red-500/10 text-red-500 rounded font-bold uppercase">Not Available</span>}
+            </div>
+            
+            {!isAvailable ? (
+                <p className="text-[10px] text-[var(--text-secondary)] italic leading-relaxed">
+                    This feature is not available for {mediaType.split('/')[0]} files.
+                </p>
+            ) : summary ? (
+                <p className="text-xs text-[var(--text-primary)] leading-relaxed">
+                    {summary}
+                </p>
+            ) : (
+                <div className="space-y-2 py-1">
+                    <div className="h-1.5 w-full bg-[var(--border-color)] rounded animate-pulse" />
+                    <div className="h-1.5 w-[90%] bg-[var(--border-color)] rounded animate-pulse" />
+                    <p className="text-[10px] text-[var(--text-secondary)] italic">Analyzing...</p>
+                </div>
+            )}
         </div>
     )
 }

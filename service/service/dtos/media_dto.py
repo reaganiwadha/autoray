@@ -19,4 +19,4 @@ class MediaResponse(BaseModel):
     url: str | None = None
     binary_metadata: Optional[Dict[str, Any]] = None
     thumbnails: List[ThumbnailResponse] = []
-    summary: Optional[MediaSummaryResponse] = None
+    summaries: List[MediaSummaryResponse] = []

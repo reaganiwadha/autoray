@@ -184,7 +184,7 @@ def add_media_to_project_endpoint(
         .where(ProjectMedia.project_id == project_id, ProjectMedia.media_id == media_id)
         .options(
             selectinload(Media.thumbnails),
-            selectinload(Media.summary)
+            selectinload(Media.summaries)
         )
     )
     result = session.exec(statement).first()
@@ -222,7 +222,7 @@ def update_project_media(
         .where(ProjectMedia.project_id == project_id, ProjectMedia.media_id == media_id)
         .options(
             selectinload(Media.thumbnails),
-            selectinload(Media.summary)
+            selectinload(Media.summaries)
         )
     )
     result = session.exec(statement).first()

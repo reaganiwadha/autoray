@@ -41,6 +41,6 @@ class Media(SQLModel, table=True):
 
     projects: List["Project"] = Relationship(back_populates="medias", link_model=ProjectMedia)
 
-    summary: Optional["MediaSummary"] = Relationship(back_populates="media")
+    summaries: List["MediaSummary"] = Relationship(back_populates="media")
 
 
