@@ -421,11 +421,28 @@ function MediaCard({ pm, onToggleUnused, onDownload, onSelect, isSelected, s3Bas
         </div>
 
         {/* Hover Actions */}
-        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3" onClick={e => e.stopPropagation()}>
-            <button onClick={() => window.open(`${s3BaseUrl}/medias/${media.s3_key}`)} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors" title="Preview">
+        <div 
+            className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3"
+            onClick={(e) => {
+                // If they click the background of the overlay, trigger selection
+                // If they click a button, let the button handler handle it
+                if (e.target === e.currentTarget) {
+                    onSelect()
+                }
+            }}
+        >
+            <button 
+                onClick={(e) => { e.stopPropagation(); window.open(`${s3BaseUrl}/medias/${media.s3_key}`); }} 
+                className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors" 
+                title="Preview"
+            >
                 <ExternalLink size={20} />
             </button>
-            <button onClick={() => onDownload(media)} className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors" title="Download">
+            <button 
+                onClick={(e) => { e.stopPropagation(); onDownload(media); }} 
+                className="p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors" 
+                title="Download"
+            >
                 <Download size={20} />
             </button>
         </div>
