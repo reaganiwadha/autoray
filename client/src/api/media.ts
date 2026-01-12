@@ -1,5 +1,17 @@
 import { apiClient } from './client'
 
+export interface ThumbnailResponse {
+  id: number
+  filename: string
+  content_type: string
+  size: number
+  s3_key: string
+  width: number | null
+  height: number | null
+  type: string
+  created_at: string
+}
+
 export interface MediaResponse {
   id: number
   filename: string
@@ -7,6 +19,8 @@ export interface MediaResponse {
   size: number
   s3_key: string
   created_at: string
+  binary_metadata?: any
+  thumbnails: ThumbnailResponse[]
 }
 
 export async function uploadMedia(file: File): Promise<MediaResponse> {
@@ -15,6 +29,10 @@ export async function uploadMedia(file: File): Promise<MediaResponse> {
 
   return apiClient.post('media/upload', {
     body: formData,
-    timeout: false, // Let large uploads take their time
+    timeout: false,
   }).json()
+}
+
+export async function getMedia(): Promise<MediaResponse[]> {
+  return apiClient.get('media').json()
 }

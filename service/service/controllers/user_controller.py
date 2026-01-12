@@ -6,12 +6,6 @@ from typing import Optional
 from datetime import datetime
 import secrets
 
-def get_session():
-    from service.main import engine
-
-    with Session(engine) as session:
-        yield session
-
 
 def create_user(user_data: UserCreate, session: Session) -> User:
     db_user = User(

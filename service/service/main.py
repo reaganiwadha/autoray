@@ -1,10 +1,3 @@
-from service.models import user, project
-from sqlmodel import SQLModel, create_engine, Session, select
-import os
-
-database_url = os.environ.get("DATABASE_URL", "sqlite:///database.db")
-engine = create_engine(database_url)
-
 from fastapi import FastAPI, Depends, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -14,8 +7,8 @@ from service.controllers.user_controller import (
     login_user,
     logout_user,
     get_current_user,
-    get_session,
 )
+from service.core.database import get_session
 from service.dtos.project_dto import ProjectCreate, ProjectResponse, ProjectUpdate
 from service.controllers.project_controller import (
     create_project,
@@ -26,6 +19,8 @@ from service.controllers.project_controller import (
 from service.dtos.media_dto import MediaResponse
 from service.controllers.media_controller import upload_media, get_user_media
 from fastapi import UploadFile, File
+from sqlmodel import Session, select
+from service.models import user
 import random
 import string
 import io
@@ -127,14 +122,16 @@ def delete_existing_project(
     return {"status": "ok"}
 
 
+from service.dtos.thumbnail_dto import ThumbnailResponse
+
 @app.post("/media/upload", response_model=MediaResponse)
-def upload_file(
+async def upload_file(
     file: UploadFile = File(...),
     Authorization: str = Header(...),
     session: Session = Depends(get_session),
 ):
     user = get_current_user(Authorization, session)
-    media = upload_media(file, user, session)
+    media = await upload_media(file, user, session)
     return MediaResponse(
         id=media.id,
         filename=media.filename,
@@ -142,6 +139,8 @@ def upload_file(
         size=media.size,
         s3_key=media.s3_key,
         created_at=media.created_at,
+        binary_metadata=media.binary_metadata,
+        thumbnails=[ThumbnailResponse.model_validate(t) for t in media.thumbnails]
     )
 
 
@@ -160,13 +159,15 @@ def list_media(
             size=m.size,
             s3_key=m.s3_key,
             created_at=m.created_at,
+            binary_metadata=m.binary_metadata,
+            thumbnails=[ThumbnailResponse.model_validate(t) for t in m.thumbnails]
         )
         for m in medias
     ]
 
 
 @app.post("/debug/upload", response_model=MediaResponse)
-def debug_upload_random_file(
+async def debug_upload_random_file(
     Authorization: str = Header(...),
     session: Session = Depends(get_session),
 ):
@@ -189,7 +190,7 @@ def debug_upload_random_file(
     headers = Headers({"content-type": "application/octet-stream"})
     upload_file = UploadFile(file=file_object, filename=filename, size=size, headers=headers)
     
-    media = upload_media(upload_file, user, session)
+    media = await upload_media(upload_file, user, session)
     
     return MediaResponse(
         id=media.id,
@@ -198,8 +199,9 @@ def debug_upload_random_file(
         size=media.size,
         s3_key=media.s3_key,
         created_at=media.created_at,
+        binary_metadata=media.binary_metadata,
+        thumbnails=[ThumbnailResponse.model_validate(t) for t in media.thumbnails]
     )
-
 
 def run():
     uvicorn.run(

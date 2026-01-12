@@ -57,6 +57,8 @@ processes:
       mc alias set local http://localhost:9000 minioadmin minioadmin
       mc mb local/medias || true
       mc anonymous set public local/medias
+      mc mb local/thumbnails || true
+      mc anonymous set public local/thumbnails
     depends_on:
       minio:
         condition: process_healthy
