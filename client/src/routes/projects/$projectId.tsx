@@ -734,10 +734,10 @@ function ChatPane({ projectId }: { projectId: string }) {
     }
 
     return (
-        <div className="flex flex-col h-full bg-[var(--bg-secondary)]">
+        <div className="flex flex-col h-full bg-[var(--bg-primary)]">
             <div className="flex items-center gap-2 p-4 border-b border-[var(--border-color)] bg-[var(--bg-primary)]">
-                <MessageSquare size={16} className="text-[var(--brand-accent)]" />
-                <h3 className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)]">autoray</h3>
+                <MessageSquare size={16} className="text-[var(--text-primary)]" />
+                <h3 className="text-sm font-bold uppercase tracking-widest text-[var(--text-primary)]">autoray</h3>
             </div>
             
             <div ref={scrollRef} className="flex-1 overflow-auto p-4 space-y-4">
@@ -745,7 +745,7 @@ function ChatPane({ projectId }: { projectId: string }) {
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[85%] p-3 rounded-2xl text-xs leading-relaxed ${
                             msg.role === 'user' 
-                            ? 'bg-[var(--brand-accent)] text-[var(--bg-primary)] font-medium' 
+                            ? 'bg-[var(--text-primary)] text-[var(--bg-primary)] font-medium shadow-sm' 
                             : 'bg-[var(--accents-1)] text-[var(--text-primary)] border border-[var(--border-color)]'
                         }`}>
                             {msg.content}
@@ -769,7 +769,7 @@ function ChatPane({ projectId }: { projectId: string }) {
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleSend()}
                         placeholder="Ask Autoray anything..."
-                        className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl py-3 pl-4 pr-12 text-xs outline-none focus:border-[var(--text-secondary)] transition-colors"
+                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl py-3 pl-4 pr-12 text-xs outline-none focus:border-[var(--text-primary)] transition-colors"
                     />
                     <button 
                         onClick={handleSend}
