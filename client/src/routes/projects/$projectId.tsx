@@ -737,7 +737,7 @@ function ChatPane({ projectId }: { projectId: string }) {
         <div className="flex flex-col h-full bg-[var(--bg-secondary)]">
             <div className="flex items-center gap-2 p-4 border-b border-[var(--border-color)] bg-[var(--bg-primary)]">
                 <MessageSquare size={16} className="text-[var(--brand-accent)]" />
-                <h3 className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)]">AI Assistant</h3>
+                <h3 className="text-sm font-bold uppercase tracking-widest text-[var(--text-secondary)]">autoray</h3>
             </div>
             
             <div ref={scrollRef} className="flex-1 overflow-auto p-4 space-y-4">
@@ -788,28 +788,11 @@ function Timeline({ media }: { media: ProjectMedia[] }) {
     return (
         <div className="h-full flex flex-col gap-6">
             <div className="flex-1 bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-color)] border-dashed flex flex-col items-center justify-center p-12 text-center">
-                <Clock size={48} className="text-[var(--accents-2)] mb-4" />
-                <h3 className="text-lg font-bold mb-2">Editor Timeline</h3>
-                <p className="text-sm text-[var(--text-secondary)] max-w-md">
-                    This is where you'll arrange your clips. Use the AI chat on the right to automatically generate edits or drag clips here manually.
-                </p>
+                <h3 className="text-lg font-bold mb-2 text-[var(--text-secondary)]">Editor Timeline goes here TODO TODO TODO</h3>
             </div>
             
-            <div className="h-48 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl p-4 flex flex-col">
-                <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-secondary)]">Timeline Tracks</h4>
-                    <div className="flex gap-2 text-[10px] text-[var(--text-secondary)] font-medium">
-                        <span>00:00:00</span>
-                        <span>/</span>
-                        <span>00:00:00</span>
-                    </div>
-                </div>
-                <div className="flex-1 space-y-2">
-                    <div className="h-8 bg-[var(--accents-1)] rounded-lg border border-[var(--border-color)] relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-[1px] h-full bg-red-500 z-10" />
-                    </div>
-                    <div className="h-8 bg-[var(--accents-1)] rounded-lg border border-[var(--border-color)]" />
-                </div>
+            <div className="h-48 bg-[var(--bg-secondary)] border border-[var(--border-color)] border-dashed rounded-2xl flex items-center justify-center">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]">Timeline tracks goes here TODO TODO TODO</h4>
             </div>
         </div>
   )
