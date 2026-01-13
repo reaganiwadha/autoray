@@ -12,6 +12,14 @@ export interface ThumbnailResponse {
   created_at: string
 }
 
+export interface MediaSummaryResponse {
+  id: number
+  type: string
+  summary: string
+  model_name: string
+  created_at: string
+}
+
 export interface MediaResponse {
   id: number
   filename: string
@@ -21,6 +29,7 @@ export interface MediaResponse {
   created_at: string
   binary_metadata?: any
   thumbnails: ThumbnailResponse[]
+  summaries: MediaSummaryResponse[]
 }
 
 export async function uploadMedia(file: File): Promise<MediaResponse> {

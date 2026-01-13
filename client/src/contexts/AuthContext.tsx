@@ -24,14 +24,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token')
-    const storedUser = localStorage.getItem('user')
-    
-    if (storedToken && storedUser) {
-      setToken(storedToken)
-      setUser(JSON.parse(storedUser))
+    const checkAuth = async () => {
+      const storedToken = localStorage.getItem('token')
+      const storedUser = localStorage.getItem('user')
+      
+      if (storedToken) {
+        setToken(storedToken)
+        if (storedUser) {
+          setUser(JSON.parse(storedUser))
+        }
+
+        try {
+          // Verify token is still valid by fetching fresh user data
+          const user = await apiClient.get('users/me').json<User>()
+          setUser(user)
+          localStorage.setItem('user', JSON.stringify(user))
+        } catch (error) {
+          console.error('Auth check failed:', error)
+          // Token is invalid/expired
+          await logout()
+        }
+      }
+      setLoading(false)
     }
-    setLoading(false)
+
+    checkAuth()
   }, [])
 
   const login = async (email: string, password: string) => {
@@ -54,18 +71,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = async () => {
-    if (!token) return
-
-    try {
-      await apiClient.post('users/logout')
-    } catch (error) {
-      console.error('Logout error:', error)
-    } finally {
-      setUser(null)
-      setToken(null)
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+    if (token || localStorage.getItem('token')) {
+      try {
+        await apiClient.post('users/logout')
+      } catch (error) {
+        console.error('Logout error:', error)
+      }
     }
+
+    setUser(null)
+    setToken(null)
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
   }
 
   return (

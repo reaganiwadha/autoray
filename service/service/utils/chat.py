@@ -149,17 +149,9 @@ async def chat_with_project_stream(user_id: int, project_id: int, message: str) 
             continue
         
         if msg.content:
+            yield f"TEXT:{msg.content}\n"
             history.add_message(msg)
-            
-            async for chunk in chat_completion.get_streaming_chat_message_contents(
-                chat_history=history,
-                settings=execution_settings,
-                kernel=kernel
-            ):
-                if chunk[0].content:
-                    yield f"TEXT:{chunk[0].content}"
-        
-        break
+            break
 
 
 async def chat_with_project(user_id: int, project_id: int, message: str):

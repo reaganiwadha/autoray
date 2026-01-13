@@ -2,54 +2,55 @@
 @import "@fontsource-variable/inter";
 
 :root {
-  /* Grayscale */
-  --accents-1: #fafafa;
-  --accents-2: #eaeaea;
-  --accents-3: #999;
-  --accents-4: #888;
-  --accents-5: #666;
-  --accents-6: #444;
-  --accents-7: #333;
-  --accents-8: #111;
-
-  /* Neutrals */
-  --geist-foreground: #000;
-  --geist-background: #fff;
-  
-  /* Themed variables */
-  --bg-primary: var(--geist-background);
-  --bg-secondary: var(--accents-1);
-  --text-primary: var(--geist-foreground);
-  --text-secondary: var(--accents-5);
-  --border-color: var(--accents-2);
-  
-  /* Accents */
-  --geist-success: #0070f3;
-  --geist-error: #ee0000;
-  --geist-warning: #f5a623;
-  --brand-accent: #0070f3;
+  --bg-primary: #F3F4F4;
+  --bg-secondary: #F6F0D7;
+  --bg-tertiary: #C5D89D;
+  --bg-elevated: #ffffff;
+  --text-primary: #061E29;
+  --text-secondary: #1D546D;
+  --text-muted: #5F9598;
+  --border-color: #5F9598;
+  --border-light: #C5D89D;
+  --accent-primary: #9CAB84;
+  --accent-secondary: #89986D;
+  --accent-tertiary: #5F9598;
+  --nature-1: #F6F0D7;
+  --nature-2: #C5D89D;
+  --nature-3: #9CAB84;
+  --nature-4: #89986D;
+  --success: #9CAB84;
+  --warning: #F6F0D7;
+  --error: #CF0F47;
+  --error-bg: #FFDEDE;
+  --cta-text: #061E29;
+  --cta-bg: #CF0F47;
+  --cta-hover: #FF0B55;
 }
 
 .dark {
-  --accents-1: #111;
-  --accents-2: #333;
-  --accents-3: #444;
-  --accents-4: #666;
-  --accents-5: #888;
-  --accents-6: #999;
-  --accents-7: #eaeaea;
-  --accents-8: #fafafa;
-
-  --geist-foreground: #fff;
-  --geist-background: #000;
-
-  --bg-primary: var(--geist-background);
-  --bg-secondary: #0a0a0a;
-  --text-primary: var(--geist-foreground);
-  --text-secondary: var(--accents-5);
-  --border-color: var(--accents-2);
-
-  --brand-accent: #fff; /* Vercel uses white accent in dark mode often */
+  --bg-primary: #061E29;
+  --bg-secondary: #000000;
+  --bg-tertiary: #1D546D;
+  --bg-elevated: #1D546D;
+  --text-primary: #F3F4F4;
+  --text-secondary: #5F9598;
+  --text-muted: #5F9598;
+  --border-color: #1D546D;
+  --border-light: #5F9598;
+  --accent-primary: #C5D89D;
+  --accent-secondary: #9CAB84;
+  --accent-tertiary: #89986D;
+  --nature-1: #F6F0D7;
+  --nature-2: #C5D89D;
+  --nature-3: #9CAB84;
+  --nature-4: #89986D;
+  --success: #9CAB84;
+  --warning: #F6F0D7;
+  --error: #FF0B55;
+  --error-bg: #CF0F47;
+  --cta-text: #061E29;
+  --cta-bg: #C5D89D;
+  --cta-hover: #9CAB84;
 }
 
 

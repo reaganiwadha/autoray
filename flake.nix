@@ -20,6 +20,7 @@
             process-compose
             minio
             minio-client
+            ffmpeg
           ];
 
           shellHook = ''

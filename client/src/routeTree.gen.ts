@@ -17,6 +17,10 @@ import { Route as DebugUploadRouteImport } from './routes/debug/upload'
 import { Route as DebugStatusRouteImport } from './routes/debug/status'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as ProjectsProjectIdIndexRouteImport } from './routes/projects/$projectId/index'
+import { Route as ProjectsProjectIdTimelineRouteImport } from './routes/projects/$projectId/timeline'
+import { Route as ProjectsProjectIdExportRouteImport } from './routes/projects/$projectId/export'
+import { Route as ProjectsProjectIdBinRouteImport } from './routes/projects/$projectId/bin'
 
 const MediaBinRoute = MediaBinRouteImport.update({
   id: '/media-bin',
@@ -58,6 +62,27 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/auth/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsProjectIdIndexRoute = ProjectsProjectIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProjectsProjectIdRoute,
+} as any)
+const ProjectsProjectIdTimelineRoute =
+  ProjectsProjectIdTimelineRouteImport.update({
+    id: '/timeline',
+    path: '/timeline',
+    getParentRoute: () => ProjectsProjectIdRoute,
+  } as any)
+const ProjectsProjectIdExportRoute = ProjectsProjectIdExportRouteImport.update({
+  id: '/export',
+  path: '/export',
+  getParentRoute: () => ProjectsProjectIdRoute,
+} as any)
+const ProjectsProjectIdBinRoute = ProjectsProjectIdBinRouteImport.update({
+  id: '/bin',
+  path: '/bin',
+  getParentRoute: () => ProjectsProjectIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,8 +91,12 @@ export interface FileRoutesByFullPath {
   '/auth/register': typeof AuthRegisterRoute
   '/debug/status': typeof DebugStatusRoute
   '/debug/upload': typeof DebugUploadRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRouteWithChildren
   '/projects': typeof ProjectsIndexRoute
+  '/projects/$projectId/bin': typeof ProjectsProjectIdBinRoute
+  '/projects/$projectId/export': typeof ProjectsProjectIdExportRoute
+  '/projects/$projectId/timeline': typeof ProjectsProjectIdTimelineRoute
+  '/projects/$projectId/': typeof ProjectsProjectIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -76,8 +105,11 @@ export interface FileRoutesByTo {
   '/auth/register': typeof AuthRegisterRoute
   '/debug/status': typeof DebugStatusRoute
   '/debug/upload': typeof DebugUploadRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects': typeof ProjectsIndexRoute
+  '/projects/$projectId/bin': typeof ProjectsProjectIdBinRoute
+  '/projects/$projectId/export': typeof ProjectsProjectIdExportRoute
+  '/projects/$projectId/timeline': typeof ProjectsProjectIdTimelineRoute
+  '/projects/$projectId': typeof ProjectsProjectIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -87,8 +119,12 @@ export interface FileRoutesById {
   '/auth/register': typeof AuthRegisterRoute
   '/debug/status': typeof DebugStatusRoute
   '/debug/upload': typeof DebugUploadRoute
-  '/projects/$projectId': typeof ProjectsProjectIdRoute
+  '/projects/$projectId': typeof ProjectsProjectIdRouteWithChildren
   '/projects/': typeof ProjectsIndexRoute
+  '/projects/$projectId/bin': typeof ProjectsProjectIdBinRoute
+  '/projects/$projectId/export': typeof ProjectsProjectIdExportRoute
+  '/projects/$projectId/timeline': typeof ProjectsProjectIdTimelineRoute
+  '/projects/$projectId/': typeof ProjectsProjectIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +137,10 @@ export interface FileRouteTypes {
     | '/debug/upload'
     | '/projects/$projectId'
     | '/projects'
+    | '/projects/$projectId/bin'
+    | '/projects/$projectId/export'
+    | '/projects/$projectId/timeline'
+    | '/projects/$projectId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -109,8 +149,11 @@ export interface FileRouteTypes {
     | '/auth/register'
     | '/debug/status'
     | '/debug/upload'
-    | '/projects/$projectId'
     | '/projects'
+    | '/projects/$projectId/bin'
+    | '/projects/$projectId/export'
+    | '/projects/$projectId/timeline'
+    | '/projects/$projectId'
   id:
     | '__root__'
     | '/'
@@ -121,6 +164,10 @@ export interface FileRouteTypes {
     | '/debug/upload'
     | '/projects/$projectId'
     | '/projects/'
+    | '/projects/$projectId/bin'
+    | '/projects/$projectId/export'
+    | '/projects/$projectId/timeline'
+    | '/projects/$projectId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -130,7 +177,7 @@ export interface RootRouteChildren {
   AuthRegisterRoute: typeof AuthRegisterRoute
   DebugStatusRoute: typeof DebugStatusRoute
   DebugUploadRoute: typeof DebugUploadRoute
-  ProjectsProjectIdRoute: typeof ProjectsProjectIdRoute
+  ProjectsProjectIdRoute: typeof ProjectsProjectIdRouteWithChildren
   ProjectsIndexRoute: typeof ProjectsIndexRoute
 }
 
@@ -192,8 +239,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects/$projectId/': {
+      id: '/projects/$projectId/'
+      path: '/'
+      fullPath: '/projects/$projectId/'
+      preLoaderRoute: typeof ProjectsProjectIdIndexRouteImport
+      parentRoute: typeof ProjectsProjectIdRoute
+    }
+    '/projects/$projectId/timeline': {
+      id: '/projects/$projectId/timeline'
+      path: '/timeline'
+      fullPath: '/projects/$projectId/timeline'
+      preLoaderRoute: typeof ProjectsProjectIdTimelineRouteImport
+      parentRoute: typeof ProjectsProjectIdRoute
+    }
+    '/projects/$projectId/export': {
+      id: '/projects/$projectId/export'
+      path: '/export'
+      fullPath: '/projects/$projectId/export'
+      preLoaderRoute: typeof ProjectsProjectIdExportRouteImport
+      parentRoute: typeof ProjectsProjectIdRoute
+    }
+    '/projects/$projectId/bin': {
+      id: '/projects/$projectId/bin'
+      path: '/bin'
+      fullPath: '/projects/$projectId/bin'
+      preLoaderRoute: typeof ProjectsProjectIdBinRouteImport
+      parentRoute: typeof ProjectsProjectIdRoute
+    }
   }
 }
+
+interface ProjectsProjectIdRouteChildren {
+  ProjectsProjectIdBinRoute: typeof ProjectsProjectIdBinRoute
+  ProjectsProjectIdExportRoute: typeof ProjectsProjectIdExportRoute
+  ProjectsProjectIdTimelineRoute: typeof ProjectsProjectIdTimelineRoute
+  ProjectsProjectIdIndexRoute: typeof ProjectsProjectIdIndexRoute
+}
+
+const ProjectsProjectIdRouteChildren: ProjectsProjectIdRouteChildren = {
+  ProjectsProjectIdBinRoute: ProjectsProjectIdBinRoute,
+  ProjectsProjectIdExportRoute: ProjectsProjectIdExportRoute,
+  ProjectsProjectIdTimelineRoute: ProjectsProjectIdTimelineRoute,
+  ProjectsProjectIdIndexRoute: ProjectsProjectIdIndexRoute,
+}
+
+const ProjectsProjectIdRouteWithChildren =
+  ProjectsProjectIdRoute._addFileChildren(ProjectsProjectIdRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -202,7 +294,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRegisterRoute: AuthRegisterRoute,
   DebugStatusRoute: DebugStatusRoute,
   DebugUploadRoute: DebugUploadRoute,
-  ProjectsProjectIdRoute: ProjectsProjectIdRoute,
+  ProjectsProjectIdRoute: ProjectsProjectIdRouteWithChildren,
   ProjectsIndexRoute: ProjectsIndexRoute,
 }
 export const routeTree = rootRouteImport

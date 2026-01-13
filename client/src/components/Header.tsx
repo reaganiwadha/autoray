@@ -27,7 +27,7 @@ export default function Header() {
   }, [])
 
   return (
-    <header className="flex items-center justify-between px-4 py-3 border-b border-black dark:border-white bg-white dark:bg-black text-black dark:text-white transition-colors duration-200 sticky top-0 z-50">
+    <header className="flex items-center justify-between px-4 py-3 bg-primary text-primary transition-colors duration-200 sticky top-0 z-50">
       <div className="flex items-center gap-2">
         <Link to="/" className="text-lg font-bold tracking-tight hover:opacity-70 transition-opacity">
           autoray
@@ -35,7 +35,7 @@ export default function Header() {
         
         {isProjectsPage && (
           <>
-            <span className="text-gray-400 dark:text-gray-600">/</span>
+            <span className="text-text-muted">/</span>
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setIsProjectMenuOpen(!isProjectMenuOpen)}
@@ -46,9 +46,9 @@ export default function Header() {
               </button>
 
               {isProjectMenuOpen && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-black border border-black dark:border-white rounded-md shadow-lg py-1 z-50">
+                <div className="absolute top-full left-0 mt-2 w-48 bg-elevated border border rounded-md shadow-lg py-1 z-50">
                   <button
-                    className="block w-full text-left px-4 py-2 text-sm hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-secondary transition-colors"
                     onClick={() => {
                       router.navigate({ to: '/projects' })
                       setIsProjectMenuOpen(false)
@@ -57,7 +57,7 @@ export default function Header() {
                     Projects
                   </button>
                   <button
-                    className="block w-full text-left px-4 py-2 text-sm hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-colors"
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-secondary transition-colors"
                     onClick={() => {
                       router.navigate({ to: '/media-bin' })
                       setIsProjectMenuOpen(false)
@@ -75,7 +75,7 @@ export default function Header() {
       <div className="flex items-center gap-4">
         <button
           onClick={toggleTheme}
-          className="p-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black rounded-md transition-colors border border-transparent hover:border-black dark:hover:border-white"
+          className="p-1 hover:bg-secondary hover:text-primary rounded-md transition-colors border border-transparent hover:border"
           aria-label="Toggle theme"
         >
           {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -86,7 +86,7 @@ export default function Header() {
             <span className="text-sm font-medium hidden sm:block">{user.name}</span>
             <button
               onClick={logout}
-              className="p-1 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black rounded-md transition-colors border border-transparent hover:border-black dark:hover:border-white"
+              className="p-1 hover:bg-secondary hover:text-primary rounded-md transition-colors border border-transparent hover:border"
               aria-label="Logout"
               title="Logout"
             >
