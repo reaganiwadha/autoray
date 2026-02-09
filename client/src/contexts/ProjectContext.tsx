@@ -1,11 +1,9 @@
 import { createContext, useContext } from 'react'
-import type { Project, ProjectMedia } from '../api/projects'
+import type { Project } from '../api/projects'
 
 export interface ProjectContextType {
     project: Project
-    projectMedia: ProjectMedia[]
-    setProjectMedia: React.Dispatch<React.SetStateAction<ProjectMedia[]>>
-    s3BaseUrl: string
+    refreshProject: () => Promise<void>
 }
 
 export const ProjectContext = createContext<ProjectContextType | null>(null)

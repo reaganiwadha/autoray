@@ -20,6 +20,7 @@ dependencies = [
     "langchain-community>=0.3",
     "langchain<1.0.0",
     "semantic-kernel>=1.36.0",
+    "openagv",
 ]
 
 [project.scripts]
@@ -46,3 +47,6 @@ ignore = [
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
+
+[tool.uv.sources]
+openagv = { git = "https://github.com/reaganiwadha/openagv.git" }

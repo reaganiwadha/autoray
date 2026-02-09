@@ -1,10 +1,7 @@
 from datetime import datetime, timezone
-from typing import List
 
 from pydantic import BaseModel
 
-from service.dtos.media_dto import MediaResponse
-from service.dtos.thumbnail_dto import ThumbnailResponse
 from service.models.project import Project
 
 
@@ -20,15 +17,18 @@ class ProjectResponse(BaseModel):
     id: int
     name: str
     owner_id: int
-    created_at: datetime
-    updated_at: datetime
-    medias: List[MediaResponse] = []
+    created_at: str
+    updated_at: str
+    assets: list[dict] = []
+    timeline: dict | None = None
+    jobs: list[dict] = []
+    chat_history: list[dict] = []
+    system_prompt: str | None = None
 
     @classmethod
     def from_db_project(cls, db_project: Project) -> "ProjectResponse":
-        assert db_project.id is not None, "Project ID must not be None"
+        assert db_project.id is not None
 
-        # Ensure datetimes are timezone-aware (assume UTC if naive from SQLite)
         created_at = db_project.created_at
         if created_at.tzinfo is None:
             created_at = created_at.replace(tzinfo=timezone.utc)
@@ -37,23 +37,21 @@ class ProjectResponse(BaseModel):
         if updated_at.tzinfo is None:
             updated_at = updated_at.replace(tzinfo=timezone.utc)
 
+        data = db_project.data or {}
+
+        # Extract assets from the nested asset_bin structure
+        asset_bin = data.get("asset_bin", {})
+        assets = asset_bin.get("assets", [])
+
         return cls(
             id=db_project.id,
             name=db_project.name,
             owner_id=db_project.owner_id,
-            created_at=created_at,
-            updated_at=updated_at,
-            medias=[
-                MediaResponse(
-                    id=m.id,
-                    filename=m.filename,
-                    content_type=m.content_type,
-                    size=m.size,
-                    s3_key=m.s3_key,
-                    created_at=m.created_at,
-                    binary_metadata=m.binary_metadata,
-                    thumbnails=[ThumbnailResponse.model_validate(t) for t in m.thumbnails],
-                )
-                for m in db_project.medias
-            ],
+            created_at=created_at.isoformat(),
+            updated_at=updated_at.isoformat(),
+            assets=assets,
+            timeline=data.get("timeline"),
+            jobs=data.get("jobs", []),
+            chat_history=data.get("chat_history", []),
+            system_prompt=data.get("system_prompt"),
         )

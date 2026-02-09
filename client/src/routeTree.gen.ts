@@ -9,12 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as MediaBinRouteImport } from './routes/media-bin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProjectsIndexRouteImport } from './routes/projects/index'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects/$projectId'
-import { Route as DebugUploadRouteImport } from './routes/debug/upload'
-import { Route as DebugStatusRouteImport } from './routes/debug/status'
 import { Route as AuthRegisterRouteImport } from './routes/auth/register'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as ProjectsProjectIdIndexRouteImport } from './routes/projects/$projectId/index'
@@ -22,11 +19,6 @@ import { Route as ProjectsProjectIdTimelineRouteImport } from './routes/projects
 import { Route as ProjectsProjectIdExportRouteImport } from './routes/projects/$projectId/export'
 import { Route as ProjectsProjectIdBinRouteImport } from './routes/projects/$projectId/bin'
 
-const MediaBinRoute = MediaBinRouteImport.update({
-  id: '/media-bin',
-  path: '/media-bin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -40,16 +32,6 @@ const ProjectsIndexRoute = ProjectsIndexRouteImport.update({
 const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
   id: '/projects/$projectId',
   path: '/projects/$projectId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DebugUploadRoute = DebugUploadRouteImport.update({
-  id: '/debug/upload',
-  path: '/debug/upload',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DebugStatusRoute = DebugStatusRouteImport.update({
-  id: '/debug/status',
-  path: '/debug/status',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRegisterRoute = AuthRegisterRouteImport.update({
@@ -86,11 +68,8 @@ const ProjectsProjectIdBinRoute = ProjectsProjectIdBinRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/media-bin': typeof MediaBinRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
-  '/debug/status': typeof DebugStatusRoute
-  '/debug/upload': typeof DebugUploadRoute
   '/projects/$projectId': typeof ProjectsProjectIdRouteWithChildren
   '/projects': typeof ProjectsIndexRoute
   '/projects/$projectId/bin': typeof ProjectsProjectIdBinRoute
@@ -100,11 +79,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/media-bin': typeof MediaBinRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
-  '/debug/status': typeof DebugStatusRoute
-  '/debug/upload': typeof DebugUploadRoute
   '/projects': typeof ProjectsIndexRoute
   '/projects/$projectId/bin': typeof ProjectsProjectIdBinRoute
   '/projects/$projectId/export': typeof ProjectsProjectIdExportRoute
@@ -114,11 +90,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/media-bin': typeof MediaBinRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/register': typeof AuthRegisterRoute
-  '/debug/status': typeof DebugStatusRoute
-  '/debug/upload': typeof DebugUploadRoute
   '/projects/$projectId': typeof ProjectsProjectIdRouteWithChildren
   '/projects/': typeof ProjectsIndexRoute
   '/projects/$projectId/bin': typeof ProjectsProjectIdBinRoute
@@ -130,11 +103,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/media-bin'
     | '/auth/login'
     | '/auth/register'
-    | '/debug/status'
-    | '/debug/upload'
     | '/projects/$projectId'
     | '/projects'
     | '/projects/$projectId/bin'
@@ -144,11 +114,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/media-bin'
     | '/auth/login'
     | '/auth/register'
-    | '/debug/status'
-    | '/debug/upload'
     | '/projects'
     | '/projects/$projectId/bin'
     | '/projects/$projectId/export'
@@ -157,11 +124,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/media-bin'
     | '/auth/login'
     | '/auth/register'
-    | '/debug/status'
-    | '/debug/upload'
     | '/projects/$projectId'
     | '/projects/'
     | '/projects/$projectId/bin'
@@ -172,24 +136,14 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  MediaBinRoute: typeof MediaBinRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthRegisterRoute: typeof AuthRegisterRoute
-  DebugStatusRoute: typeof DebugStatusRoute
-  DebugUploadRoute: typeof DebugUploadRoute
   ProjectsProjectIdRoute: typeof ProjectsProjectIdRouteWithChildren
   ProjectsIndexRoute: typeof ProjectsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/media-bin': {
-      id: '/media-bin'
-      path: '/media-bin'
-      fullPath: '/media-bin'
-      preLoaderRoute: typeof MediaBinRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -209,20 +163,6 @@ declare module '@tanstack/react-router' {
       path: '/projects/$projectId'
       fullPath: '/projects/$projectId'
       preLoaderRoute: typeof ProjectsProjectIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/debug/upload': {
-      id: '/debug/upload'
-      path: '/debug/upload'
-      fullPath: '/debug/upload'
-      preLoaderRoute: typeof DebugUploadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/debug/status': {
-      id: '/debug/status'
-      path: '/debug/status'
-      fullPath: '/debug/status'
-      preLoaderRoute: typeof DebugStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/register': {
@@ -289,11 +229,8 @@ const ProjectsProjectIdRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  MediaBinRoute: MediaBinRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthRegisterRoute: AuthRegisterRoute,
-  DebugStatusRoute: DebugStatusRoute,
-  DebugUploadRoute: DebugUploadRoute,
   ProjectsProjectIdRoute: ProjectsProjectIdRouteWithChildren,
   ProjectsIndexRoute: ProjectsIndexRoute,
 }

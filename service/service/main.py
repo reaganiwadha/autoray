@@ -1,27 +1,26 @@
-import io
+import asyncio
 import os
-import random
-import string
 
 import uvicorn
 from fastapi import Depends, FastAPI, File, Header, HTTPException, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
-from starlette.datastructures import Headers
 
-from service.controllers.media_controller import delete_media, get_user_media, upload_media
 from service.controllers.project_controller import (
-    add_media_to_project,
     create_project,
+    delete_asset_from_project,
     delete_project,
+    enrich_project_response,
     get_project_by_id,
-    get_project_media,
+    get_project_jobs,
     get_user_projects,
+    submit_job,
     update_project,
-    update_project_media_status,
+    upload_to_project,
+    _load_agv_project,
+    _save_project,
 )
 from service.controllers.user_controller import (
     create_user,
@@ -31,17 +30,11 @@ from service.controllers.user_controller import (
     logout_user,
 )
 from service.core.database import get_session
-from service.dtos.media_dto import MediaResponse
-from service.dtos.project_dto import ProjectCreate, ProjectResponse, ProjectUpdate
-from service.dtos.project_media_dto import ProjectMediaResponse
-from service.dtos.thumbnail_dto import ThumbnailResponse
-from service.dtos.user_dto import LoginResponse, UserCreate, UserLogin, UserResponse
-from service.models import user
-from service.models.media import Media
-from service.models.project_media import ProjectMedia
 from service.core.websocket_manager import manager
-from service.utils.analyzer import start_analyzer_job
-from service.utils.chat import chat_with_project, chat_with_project_stream
+from service.dtos.project_dto import ProjectCreate, ProjectResponse, ProjectUpdate
+from service.dtos.user_dto import LoginResponse, UserCreate, UserLogin, UserResponse
+from service.models.user import User
+
 
 async def verify_token(Authorization: str = Header(...), session: Session = Depends(get_session)):
     try:
@@ -49,15 +42,12 @@ async def verify_token(Authorization: str = Header(...), session: Session = Depe
     except HTTPException:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+
 app = FastAPI()
 
 if not os.getenv("OPENROUTER_API_KEY"):
     print("FATAL: OPENROUTER_API_KEY not found in environment")
     raise RuntimeError("OPENROUTER_API_KEY not found in environment")
-
-@app.on_event("startup")
-async def startup_event():
-    start_analyzer_job()
 
 app.add_middleware(
     CORSMiddleware,
@@ -67,6 +57,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# ──────────────────────────────── Health ────────────────────────────────
 
 @app.get("/")
 def read_root():
@@ -78,12 +70,14 @@ def read_status():
     return {"alives": {"service": True, "editor": True}}
 
 
+# ──────────────────────────────── WebSocket ────────────────────────────────
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, token: str = None, session: Session = Depends(get_session)):
     if not token:
         await websocket.close(code=1008)
         return
-    
+
     try:
         user = get_user_by_token(token, session)
     except HTTPException:
@@ -93,18 +87,18 @@ async def websocket_endpoint(websocket: WebSocket, token: str = None, session: S
     await manager.connect(user.id, websocket)
     try:
         while True:
-            # Just keep the connection alive
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(user.id, websocket)
 
 
+# ──────────────────────────────── Users ────────────────────────────────
+
 @app.post("/users/register", response_model=UserResponse)
 def register(user_data: UserCreate, session: Session = Depends(get_session)):
-    existing_user = session.exec(select(user.User).where(user.User.email == user_data.email)).first()
+    existing_user = session.exec(select(User).where(User.email == user_data.email)).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-
     db_user = create_user(user_data, session)
     return UserResponse.from_db_user(db_user)
 
@@ -126,6 +120,8 @@ def get_me(Authorization: str = Header(...), session: Session = Depends(get_sess
     db_user = get_current_user(Authorization, session)
     return UserResponse.from_db_user(db_user)
 
+
+# ──────────────────────────────── Projects ────────────────────────────────
 
 @app.post("/projects", response_model=ProjectResponse)
 def create_new_project(
@@ -156,6 +152,7 @@ def get_single_project(
 ):
     user = get_current_user(Authorization, session)
     project = get_project_by_id(project_id, user, session)
+    enrich_project_response(project)
     return ProjectResponse.from_db_project(project)
 
 
@@ -182,176 +179,102 @@ def delete_existing_project(
     return {"status": "ok"}
 
 
-@app.get("/projects/{project_id}/media", response_model=list[ProjectMediaResponse])
-def list_project_media(
+# ──────────────────────────────── Assets ────────────────────────────────
+
+@app.post("/projects/{project_id}/assets/upload")
+async def upload_asset(
     project_id: int,
-    Authorization: str = Header(...),
-    session: Session = Depends(get_session),
-):
-    user = get_current_user(Authorization, session)
-    results = get_project_media(project_id, user, session)
-    return [
-        ProjectMediaResponse(
-            project_id=assoc.project_id,
-            media_id=assoc.media_id,
-            is_unused=assoc.is_unused,
-            created_at=assoc.created_at,
-            media=MediaResponse.model_validate(m),
-        )
-        for assoc, m in results
-    ]
-
-
-@app.post("/projects/{project_id}/media/{media_id}", response_model=ProjectMediaResponse)
-def add_media_to_project_endpoint(
-    project_id: int,
-    media_id: int,
-    Authorization: str = Header(...),
-    session: Session = Depends(get_session),
-):
-    user = get_current_user(Authorization, session)
-    add_media_to_project(project_id, media_id, user, session)
-
-    # Fetch the specific assoc and media
-    statement = (
-        select(ProjectMedia, Media)
-        .join(Media, ProjectMedia.media_id == Media.id)
-        .where(ProjectMedia.project_id == project_id, ProjectMedia.media_id == media_id)
-        .options(
-            selectinload(Media.thumbnails),
-            selectinload(Media.summaries)
-        )
-    )
-    result = session.exec(statement).first()
-    if not result:
-        raise HTTPException(status_code=500, detail="Failed to retrieve added media")
-
-    assoc, m = result
-    return ProjectMediaResponse(
-        project_id=assoc.project_id,
-        media_id=assoc.media_id,
-        is_unused=assoc.is_unused,
-        created_at=assoc.created_at,
-        media=MediaResponse.model_validate(m),
-    )
-
-
-class MediaStatusUpdate(BaseModel):
-    is_unused: bool
-
-@app.patch("/projects/{project_id}/media/{media_id}", response_model=ProjectMediaResponse)
-def update_project_media(
-    project_id: int,
-    media_id: int,
-    data: MediaStatusUpdate,
-    Authorization: str = Header(...),
-    session: Session = Depends(get_session),
-):
-    user = get_current_user(Authorization, session)
-    update_project_media_status(project_id, media_id, data.is_unused, user, session)
-
-    # Fetch the specific assoc and media
-    statement = (
-        select(ProjectMedia, Media)
-        .join(Media, ProjectMedia.media_id == Media.id)
-        .where(ProjectMedia.project_id == project_id, ProjectMedia.media_id == media_id)
-        .options(
-            selectinload(Media.thumbnails),
-            selectinload(Media.summaries)
-        )
-    )
-    result = session.exec(statement).first()
-    if not result:
-        raise HTTPException(status_code=404, detail="Assoc not found after update")
-
-    assoc, m = result
-    return ProjectMediaResponse(
-        project_id=assoc.project_id,
-        media_id=assoc.media_id,
-        is_unused=assoc.is_unused,
-        created_at=assoc.created_at,
-        media=MediaResponse.model_validate(m),
-    )
-
-
-class ChatRequest(BaseModel):
-    message: str
-
-@app.post("/projects/{project_id}/chat")
-async def project_chat(
-    project_id: int,
-    request: ChatRequest,
-    user: user.User = Depends(verify_token),
-    session: Session = Depends(get_session),
-):
-    # Verify project belongs to user
-    get_project_by_id(project_id, user, session)
-    
-    return StreamingResponse(
-        chat_with_project_stream(user.id, project_id, request.message),
-        media_type="text/event-stream"
-    )
-
-
-@app.post("/media/upload", response_model=MediaResponse)
-async def upload_file(
     file: UploadFile = File(...),
-    Authorization: str = Header(...),
+    user: User = Depends(verify_token),
     session: Session = Depends(get_session),
 ):
-    user = get_current_user(Authorization, session)
-    media = await upload_media(file, user, session)
-    return MediaResponse.model_validate(media)
+    asset_dict = await upload_to_project(project_id, file, user, session)
+    return asset_dict
 
 
-@app.get("/media", response_model=list[MediaResponse])
-def list_media(
-    Authorization: str = Header(...),
+@app.delete("/projects/{project_id}/assets/{asset_id}")
+def delete_asset(
+    project_id: int,
+    asset_id: str,
+    user: User = Depends(verify_token),
     session: Session = Depends(get_session),
 ):
-    user = get_current_user(Authorization, session)
-    medias = get_user_media(user, session)
-    return [MediaResponse.model_validate(m) for m in medias]
+    delete_asset_from_project(project_id, asset_id, user, session)
+    return {"status": "ok"}
 
 
-@app.delete("/media/{media_id}")
-def delete_media_endpoint(
-    media_id: int,
-    Authorization: str = Header(...),
+# ──────────────────────────────── Jobs / SSE ────────────────────────────────
+
+class JobRequest(BaseModel):
+    instruction: str
+
+
+@app.post("/projects/{project_id}/jobs")
+async def create_job(
+    project_id: int,
+    request: JobRequest,
+    user: User = Depends(verify_token),
     session: Session = Depends(get_session),
 ):
-    user = get_current_user(Authorization, session)
-    delete_media(media_id, user, session)
-    return {"message": "Media deleted successfully"}
+    db_project, agv, job = submit_job(project_id, request.instruction, user, session)
+
+    async def run_and_save():
+        try:
+            await agv.run_job(job)
+        finally:
+            # Re-fetch project from DB to avoid stale state, then save
+            from service.core.database import engine
+            with Session(engine) as save_session:
+                db_proj = save_session.get(type(db_project), db_project.id)
+                if db_proj:
+                    _save_project(db_proj, agv, save_session)
+
+            # Notify via WebSocket
+            await manager.send_personal_message(
+                {"type": "JOB_COMPLETED", "job_id": job.id, "project_id": project_id},
+                user.id,
+            )
+
+    asyncio.create_task(run_and_save())
+
+    async def event_stream():
+        async for event in job.stream():
+            yield f"event: {event.type}\ndata: {event.to_json()}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
-@app.post("/debug/upload", response_model=MediaResponse)
-async def debug_upload_random_file(
-    Authorization: str = Header(...),
+@app.get("/projects/{project_id}/jobs")
+def list_jobs(
+    project_id: int,
+    user: User = Depends(verify_token),
     session: Session = Depends(get_session),
 ):
-    """
-    Generates a random 1MB file and uploads it.
-    """
-    user = get_current_user(Authorization, session)
+    return get_project_jobs(project_id, user, session)
 
-    # Generate random content (1MB)
-    size = 1024 * 1024
-    content = os.urandom(size)
 
-    # Generate random filename
-    random_name = "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
-    filename = f"debug_{random_name}.bin"
+@app.get("/projects/{project_id}/jobs/{job_id}/stream")
+async def stream_job(
+    project_id: int,
+    job_id: str,
+    user: User = Depends(verify_token),
+    session: Session = Depends(get_session),
+):
+    db_project = get_project_by_id(project_id, user, session)
+    agv = _load_agv_project(db_project)
 
-    # Create UploadFile-like object
-    file_object = io.BytesIO(content)
-    headers = Headers({"content-type": "application/octet-stream"})
-    upload_file = UploadFile(file=file_object, filename=filename, size=size, headers=headers)
+    job = next((j for j in agv.jobs if j.id == job_id), None)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
 
-    media = await upload_media(upload_file, user, session)
+    async def event_stream():
+        async for event in job.stream():
+            yield f"event: {event.type}\ndata: {event.to_json()}\n\n"
 
-    return MediaResponse.model_validate(media)
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
+
+# ──────────────────────────────── Entrypoint ────────────────────────────────
 
 def run():
     uvicorn.run(
